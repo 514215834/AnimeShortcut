@@ -3,8 +3,10 @@ defineProps<{ text: string; hint?: string }>()
 </script>
 
 <template>
-  <div class="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
+  <div
+    class="rounded-2xl border border-dashed border-gray-300/70 bg-white/50 p-10 text-center backdrop-blur"
+  >
     <p class="text-sm text-gray-500">{{ text }}</p>
-    <p v-if="hint" class="mt-1 text-xs text-gray-400">{{ hint }}</p>
+    <p v-if="hint" class="mt-1.5 text-xs text-gray-400">{{ hint }}</p>
   </div>
 </template>
