@@ -16,7 +16,7 @@ const tabs = [
           <span class="text-indigo-600">📺</span>
           <span>动漫更新看板</span>
         </RouterLink>
-        <span class="text-xs text-gray-400">迭代 0 · 工程地基</span>
+        <span class="text-xs text-gray-400">MVP · v0.1</span>
       </div>
       <nav class="mx-auto flex w-full max-w-5xl gap-1 overflow-x-auto px-4 text-sm">
         <RouterLink
