@@ -2,15 +2,20 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { readJson, writeJson } from '../core/storage/localStore'
 import { setWorkerUrl } from '../core/http/proxyChain'
+import { applyTheme } from '../theme'
 export interface Settings {
   schemaVersion: number
   /** 自部署 Cloudflare Worker 代理地址（空 = 不使用该通道） */
   proxyWorkerUrl: string
-  /** 更新检测抓取间隔（分钟，迭代 2 生效） */
+  /** 更新检测抓取间隔（分钟） */
   fetchIntervalMin: number
   notificationsEnabled: boolean
   /** 启用的数据源插件 id */
   enabledSources: string[]
+  /** 主题色预设 id（src/theme.ts ACCENT_PRESETS） */
+  accent: string
+  /** 背景光斑开 */
+  bgGlow: boolean
 }
 
 const KEY = 'settings'
@@ -20,6 +25,8 @@ const DEFAULTS: Settings = {
   fetchIntervalMin: 30,
   notificationsEnabled: true,
   enabledSources: ['agedm'],
+  accent: 'indigo',
+  bgGlow: true,
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -72,11 +79,31 @@ export const useSettingsStore = defineStore('settings', () => {
     return settings.value.enabledSources.includes(id)
   }
 
+  function setAccent(id: string): void {
+    settings.value.accent = id
+    save()
+    applyTheme(settings.value.accent, settings.value.bgGlow)
+  }
+
+  function setBgGlow(on: boolean): void {
+    settings.value.bgGlow = on
+    save()
+    applyTheme(settings.value.accent, settings.value.bgGlow)
+  }
+
+  /** 启动时应用已保存的主题 */
+  function initTheme(): void {
+    applyTheme(settings.value.accent, settings.value.bgGlow)
+  }
+
   return {
     settings,
     configRev,
     save,
     initHttp,
+    initTheme,
+    setAccent,
+    setBgGlow,
     setProxyWorkerUrl,
     setFetchInterval,
     setNotificationsEnabled,

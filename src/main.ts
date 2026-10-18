@@ -13,6 +13,7 @@ async function bootstrap(): Promise<void> {
 
   const settings = useSettingsStore()
   settings.initHttp()
+  settings.initTheme()
 
   // 初始化插件宿主（内置插件在 main 沙箱；remote 插件加载在迭代 3）
   // 开发环境把 agedm 指到 Vite 同源代理，免除外部 CORS 代理依赖

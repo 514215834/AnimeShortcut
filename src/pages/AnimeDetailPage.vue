@@ -176,7 +176,7 @@ function openPlay(ep: Episode): void {
           <span
             v-for="g in detail.genres"
             :key="g"
-            class="rounded-full border border-indigo-100/80 bg-indigo-50/80 px-2 py-0.5 text-[11px] text-indigo-500"
+            class="rounded-full border border-accent-100/80 bg-accent-50/80 px-2 py-0.5 text-[11px] text-accent-500"
           >
             {{ g }}
           </span>
@@ -198,7 +198,7 @@ function openPlay(ep: Episode): void {
       </p>
       <button
         type="button"
-        class="mt-1.5 text-xs text-indigo-500 hover:text-indigo-600"
+        class="mt-1.5 text-xs text-accent-500 hover:text-accent-600"
         @click="showFullDesc = !showFullDesc"
       >
         {{ showFullDesc ? '收起 ▲' : '展开 ▼' }}
@@ -222,7 +222,7 @@ function openPlay(ep: Episode): void {
           class="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] transition-all duration-200"
           :class="
             activeLine === i
-              ? 'bg-indigo-600 font-medium text-white shadow-sm'
+              ? 'bg-accent-600 font-medium text-white shadow-sm'
               : 'text-gray-600 hover:bg-white/80'
           "
           @click="activeLine = i"
@@ -234,12 +234,12 @@ function openPlay(ep: Episode): void {
         </button>
       </div>
 
-      <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-8">
+      <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-12">
         <button
           v-for="ep in currentEps"
           :key="ep.episodeId"
           type="button"
-          class="rounded-xl border border-white/80 bg-white/70 px-2 py-2 text-[13px] text-gray-700 shadow-[0_1px_6px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-150 hover:border-indigo-300 hover:bg-indigo-50/80 hover:text-indigo-600 active:scale-[0.97]"
+          class="rounded-xl border border-white/80 bg-white/70 px-2 py-2 text-[13px] text-gray-700 shadow-[0_1px_6px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-150 hover:border-accent-300 hover:bg-accent-50/80 hover:text-accent-600 active:scale-[0.97]"
           @click="openPlay(ep)"
         >
           {{ ep.title }}

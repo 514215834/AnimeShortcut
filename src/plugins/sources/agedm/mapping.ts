@@ -126,10 +126,16 @@ export function searchToSummary(it: AgedmSearchItem): AnimeSummary {
   }
 }
 
+/** 封面图按番剧 ID 有固定规律（探测报告 §6），周更表数据无封面时由此构造 */
+export function weekCoverUrl(id: string | number): string {
+  return `https://cdn.aqdstatic.com:966/age/covers/${id}.jpg`
+}
+
 export function weekToSummary(it: AgedmWeekItem): AnimeSummary {
   return {
     animeId: String(it.id),
     title: it.name,
+    cover: weekCoverUrl(it.id),
     weekday: it.wd,
     latestEpisodeTitle: it.namefornew,
     updateTime: parseSiteTime(it.mtime),

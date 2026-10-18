@@ -42,7 +42,7 @@ async function doSearch(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl pt-4 sm:pt-10">
+  <div class="mx-auto max-w-xl pt-4 sm:pt-8">
     <h2 class="mb-4 text-center text-[15px] font-semibold text-gray-700">搜索番剧</h2>
     <form
       class="flex items-center gap-2 rounded-2xl border border-white/70 bg-white/60 p-1.5 shadow-[0_2px_16px_rgba(30,41,59,0.06)] backdrop-blur-xl"
@@ -57,7 +57,7 @@ async function doSearch(): Promise<void> {
       />
       <button
         type="submit"
-        class="shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 px-5 py-2 text-sm text-white shadow-sm transition active:opacity-85"
+        class="shrink-0 rounded-xl bg-gradient-to-br from-accent-500 to-accent-400 px-5 py-2 text-sm text-white shadow-sm transition active:opacity-85"
         :disabled="searching"
       >
         {{ searching ? '搜索中…' : '搜索' }}
@@ -71,7 +71,7 @@ async function doSearch(): Promise<void> {
     <EmptyState v-else-if="searched && results.length === 0" text="没有找到相关结果" hint="换个关键词试试" />
     <template v-else-if="results.length > 0">
       <p class="mb-3 text-xs text-gray-400">共 {{ results.length }} 条结果</p>
-      <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+      <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
         <AnimeCard v-for="it in results" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
       </div>
     </template>

@@ -36,7 +36,7 @@ function requestClear(): void {
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl">
+  <div class="w-full">
     <div class="mb-3 flex items-center justify-between">
       <h2 class="text-[15px] font-semibold text-gray-700">
         观看历史
@@ -62,7 +62,7 @@ function requestClear(): void {
     <!-- 继续观看 -->
     <div
       v-if="latest"
-      class="mb-4 flex items-center gap-3.5 rounded-2xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/80 to-sky-50/60 p-4 backdrop-blur"
+      class="mb-4 flex items-center gap-3.5 rounded-2xl border border-accent-100/90 bg-gradient-to-br from-accent-50/80 to-accent-100/40 p-4 backdrop-blur"
     >
       <img
         v-if="latest.cover"
@@ -73,13 +73,13 @@ function requestClear(): void {
         class="h-16 w-11 shrink-0 rounded-lg object-cover shadow-sm"
       />
       <div class="min-w-0 flex-1">
-        <p class="text-[11px] text-indigo-400">继续观看</p>
+        <p class="text-[11px] text-accent-400">继续观看</p>
         <p class="truncate text-[13.5px] font-medium text-gray-800">{{ latest.title }}</p>
         <p class="mt-0.5 truncate text-xs text-gray-500">上次看到：{{ latest.episodeTitle }}</p>
       </div>
       <button
         type="button"
-        class="shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 px-4 py-2 text-xs text-white shadow-sm transition active:opacity-85"
+        class="shrink-0 rounded-xl bg-gradient-to-br from-accent-500 to-accent-400 px-4 py-2 text-xs text-white shadow-sm transition active:opacity-85"
         @click="openEntry(latest.playPageUrl)"
       >
         ▶ 播放

@@ -40,6 +40,8 @@ describe('agedm 插件（夹具回放）', () => {
     }
     const day0 = r.items.filter((i) => i.weekday === 0)
     expect(day0.some((i) => i.title === '魔法★探险家')).toBe(true)
+    // 周更封面由番剧 ID 构造（探测报告 §6）
+    expect(r.items[0]?.cover).toMatch(/^https:\/\/cdn\.aqdstatic\.com:966\/age\/covers\/\d+\.jpg$/)
   })
 
   it('getLatestUpdates：分页与 hasMore', async () => {

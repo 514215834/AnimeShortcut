@@ -13,7 +13,7 @@ defineProps<{
     <div class="flex items-center gap-2.5">
       <h1 class="text-[15px] font-semibold text-gray-800">{{ title }}</h1>
       <span
-        class="rounded-full border border-indigo-100/80 bg-indigo-50/80 px-2 py-0.5 text-[11px] text-indigo-500"
+        class="rounded-full border border-accent-100/80 bg-accent-50/80 px-2 py-0.5 text-[11px] text-accent-500"
       >
         {{ iteration }}
       </span>
@@ -21,7 +21,7 @@ defineProps<{
     <p class="mt-2 text-xs text-gray-400">按《功能迭代计划》逐期交付，规划内容：</p>
     <ul class="mt-3 space-y-1.5 text-[13px] text-gray-600">
       <li v-for="item in items" :key="item" class="flex gap-2">
-        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-300" />
+        <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-300" />
         {{ item }}
       </li>
     </ul>

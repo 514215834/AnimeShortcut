@@ -5,7 +5,6 @@ import { useUpdateStore } from '../stores/update'
 import { runCheck } from '../services/updateChecker'
 import EmptyState from '../components/EmptyState.vue'
 import SkeletonList from '../components/SkeletonList.vue'
-
 const subStore = useSubscriptionStore()
 const update = useUpdateStore()
 
@@ -38,7 +37,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl">
+  <div class="mx-auto w-full">
     <div class="mb-3 flex items-center justify-between">
       <h2 class="text-[15px] font-semibold text-gray-700">
         我的追番
@@ -48,7 +47,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
       </h2>
       <select
         v-model="sortMode"
-        class="rounded-xl border border-white/80 bg-white/70 px-2.5 py-1.5 text-xs outline-none focus:border-indigo-300"
+        class="rounded-xl border border-white/80 bg-white/70 px-2.5 py-1.5 text-xs outline-none focus:border-accent-300"
       >
         <option value="updated">有更新优先</option>
         <option value="added">按加入时间</option>
@@ -67,7 +66,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
         class="rounded-full border px-3 py-1 text-xs transition"
         :class="
           statusFilter === f.v
-            ? 'border-indigo-200 bg-indigo-600 text-white'
+            ? 'border-accent-200 bg-accent-600 text-white'
             : 'border-white/80 bg-white/60 text-gray-600 hover:bg-white/85'
         "
         @click="statusFilter = f.v as 'all' | 'ongoing' | 'finished'"

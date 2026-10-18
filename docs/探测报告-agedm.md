@@ -90,6 +90,7 @@
 - **错误形态**：参数错返回 `{code:40050, message:"参数错误！"}`（信封结构），插件应把 `code!==200` 映射为 `PARSE`/`CONFIG_INVALID` 类错误。
 - **接口演进风险**：bundle 中 baseURL 为硬编码常量（本次从 `app.9c5d5617.js` 逆向）；站点曾用 :2849 端口，域名/版本路径可能再变 → 插件 config 暴露 `apiBaseUrl` 可覆盖（已列入 manifest 示例）。
 - **封面**：`PicSmall` 实为 Baidu 图片代理套壳（内嵌 aqdstatic.com 原图地址）；直接 `<img>` + `referrerpolicy="no-referrer"` 可用，无需图片代理（迭代 4 优化项）。
+- **封面直连规律（2026-10-18 实测补充）**：原始封面遵循 `https://cdn.aqdstatic.com:966/age/covers/<AID>.jpg`，无 Referer 校验，实测多样本 200（image/jpeg）；`week_list` 项无封面字段，插件据此**按 ID 构造封面**（缺失封面的番需前端 `onerror` 回退占位图）。
 
 ## 7. 对迭代 1 插件实现的落地建议
 

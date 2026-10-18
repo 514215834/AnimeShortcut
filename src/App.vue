@@ -17,10 +17,10 @@ const updateStore = useUpdateStore()
     <header
       class="sticky top-0 z-40 border-b border-white/50 bg-white/60 shadow-[0_1px_16px_rgba(30,41,59,0.06)] backdrop-blur-xl"
     >
-      <div class="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
-        <RouterLink to="/" class="flex items-center gap-2.5">
+      <div class="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-6">
+        <RouterLink to="/" class="flex shrink-0 items-center gap-2.5">
           <span
-            class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 text-sm shadow-sm"
+            class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent-500 to-accent-400 text-sm shadow-sm"
           >
             📺
           </span>
@@ -34,7 +34,7 @@ const updateStore = useUpdateStore()
             :key="t.to"
             :to="t.to"
             class="relative rounded-full px-3.5 py-1.5 text-sm text-gray-600 transition hover:text-gray-900"
-            exact-active-class="bg-indigo-600 font-medium text-white shadow-sm hover:text-white"
+            exact-active-class="bg-accent-600 font-medium text-white shadow-sm hover:text-white"
           >
             {{ t.label }}
             <span
@@ -54,7 +54,7 @@ const updateStore = useUpdateStore()
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-5 sm:pb-8">
+    <main class="w-full flex-1 px-4 pb-24 pt-5 sm:px-6 sm:pb-8">
       <RouterView />
     </main>
 
@@ -62,13 +62,13 @@ const updateStore = useUpdateStore()
     <nav
       class="fixed inset-x-0 bottom-0 z-40 border-t border-white/50 bg-white/70 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl sm:hidden"
     >
-      <div class="mx-auto grid max-w-5xl grid-cols-5">
+      <div class="grid w-full grid-cols-5">
         <RouterLink
           v-for="t in tabs"
           :key="t.to"
           :to="t.to"
           class="relative flex flex-col items-center gap-0.5 py-2 text-[10px] text-gray-500 transition"
-          exact-active-class="text-indigo-600"
+          exact-active-class="text-accent-600"
         >
           <span class="relative text-base leading-none">
             {{ t.icon }}

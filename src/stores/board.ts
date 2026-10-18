@@ -31,6 +31,8 @@ export const useBoardStore = defineStore('board', () => {
   const weeklyLoading = ref(false)
   const weeklyError = ref('')
   const activeDay = ref<number>(new Date().getDay()) // 默认今天（0=周日）
+  /** 看板视图拆分：weekly=每周更新（卡片网格）/ latest=最新更新（信息流） */
+  const activeView = ref<'weekly' | 'latest'>('weekly')
 
   async function loadWeekly(): Promise<void> {
     weeklyLoading.value = true
@@ -117,6 +119,7 @@ export const useBoardStore = defineStore('board', () => {
     weeklyLoading,
     weeklyError,
     activeDay,
+    activeView,
     loadWeekly,
     resetLatest,
     latest,
