@@ -6,11 +6,15 @@ import homeList from './__fixtures__/home-list.json'
 import updateP1 from './__fixtures__/update-p1-size3.json'
 import searchP1 from './__fixtures__/search-juzhu-p1.json'
 import detail20260293 from './__fixtures__/detail-20260293.json'
+import catalogP1 from './__fixtures__/catalog-all-p1-size12.json'
+import rankAll from './__fixtures__/rank-year-all.json'
 
 function fakeRoute(url: string): unknown {
   if (url.includes('home-list')) return homeList
   if (url.includes('/update')) return updateP1
   if (url.includes('search?query=')) return searchP1
+  if (url.includes('catalog?')) return catalogP1
+  if (url.includes('rank?')) return rankAll
   if (url.includes('detail/')) return detail20260293
   throw new Error(`夹具未覆盖的 URL: ${url}`)
 }
@@ -78,5 +82,30 @@ describe('agedm 插件（夹具回放）', () => {
   it('resolvePlay：非法剧集 id 抛 PARSE', async () => {
     const p = await makePlugin()
     await expect(p.resolvePlay!('20260293', '9:9')).rejects.toThrow(PluginError)
+  })
+
+  it('getCatalogMeta：四组筛选定义', async () => {
+    const p = await makePlugin()
+    const meta = p.getCatalogMeta!()
+    expect(meta.map((g) => g.key)).toEqual(['region', 'genre', 'letter', 'year'])
+    expect(meta[0]?.options.some((o) => o.value === '日本')).toBe(true)
+    expect(meta[3]?.options.length).toBeGreaterThan(15)
+  })
+
+  it('getCatalog：带筛选参数且结果含封面', async () => {
+    const p = await makePlugin()
+    const r = await p.getCatalog!({ region: 'all', genre: 'all', letter: 'all', year: 'all' }, 1)
+    expect(r.items).toHaveLength(12)
+    expect(r.items[0]?.cover).toBeTruthy()
+    expect(r.hasMore).toBe(true) // total=5666
+  })
+
+  it('getRank：周/月/总三组榜单映射', async () => {
+    const p = await makePlugin()
+    const groups = await p.getRank!('all')
+    expect(groups).toHaveLength(3)
+    expect(groups.map((g) => g.name)).toEqual(['周榜', '月榜', '总榜'])
+    expect(groups[0]?.entries[0]).toMatchObject({ rankNo: 1, title: expect.any(String), score: expect.any(String) })
+    expect(groups[0]?.entries).toHaveLength(50)
   })
 })

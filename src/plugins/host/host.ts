@@ -17,6 +17,8 @@ const METHOD_BY_CAP: Record<PluginCapability, string> = {
   search: 'search',
   detail: 'getDetail',
   play: 'resolvePlay',
+  catalog: 'getCatalog',
+  rank: 'getRank',
 }
 
 const DEFAULT_HINTS: Record<PluginCapability, number> = {
@@ -25,6 +27,8 @@ const DEFAULT_HINTS: Record<PluginCapability, number> = {
   search: 0,
   detail: 3600,
   play: 0,
+  catalog: 600,
+  rank: 1800,
 }
 
 interface Loaded {
@@ -147,5 +151,28 @@ export const sources = {
   },
   play(sourceId: string, animeId: string, episodeId: string): Promise<PlayResult> {
     return invoke(sourceId, 'play', [animeId, episodeId], (p) => p.resolvePlay!(animeId, episodeId))
+  },
+  catalogMeta(sourceId: string): Promise<import('./types').CatalogFilterDef[]> {
+    const l = loaded.get(sourceId)
+    if (!l?.manifest.capabilities.includes('catalog') || typeof l.plugin.getCatalogMeta !== 'function') {
+      return Promise.reject(new PluginError('UNSUPPORTED', `${l?.manifest.name ?? sourceId} 未提供分类筛选定义`))
+    }
+    return Promise.resolve(l.plugin.getCatalogMeta())
+  },
+  catalog(
+    sourceId: string,
+    query: import('./types').CatalogQuery,
+    page = 1,
+  ): Promise<PagedResult<AnimeSummary>> {
+    return invoke(
+      sourceId,
+      'catalog',
+      [query, page],
+      (p) => p.getCatalog!(query, page),
+      tagItems(sourceId),
+    )
+  },
+  rank(sourceId: string, year?: string): Promise<import('./types').RankGroup[]> {
+    return invoke(sourceId, 'rank', [year ?? 'all'], (p) => p.getRank!(year))
   },
 }

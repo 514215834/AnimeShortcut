@@ -3,6 +3,8 @@ import { useUpdateStore } from './stores/update'
 
 const tabs = [
   { to: '/', label: '看板', icon: '🗓️' },
+  { to: '/catalog', label: '分类', icon: '🗂️' },
+  { to: '/rank', label: '榜单', icon: '🏆' },
   { to: '/search', label: '搜索', icon: '🔍' },
   { to: '/subscriptions', label: '订阅', icon: '⭐' },
   { to: '/history', label: '历史', icon: '🕘' },
@@ -18,13 +20,8 @@ const updateStore = useUpdateStore()
       class="sticky top-0 z-40 border-b border-line bg-surface shadow-[0_1px_16px_rgba(30,41,59,0.06)] backdrop-blur-xl"
     >
       <div class="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-6">
-        <RouterLink to="/" class="flex shrink-0 items-center gap-2.5">
-          <span
-            class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-accent-500 to-accent-400 text-sm shadow-sm"
-          >
-            📺
-          </span>
-          <span class="text-[15px] font-semibold tracking-wide">动漫更新看板</span>
+        <RouterLink to="/" class="shrink-0 text-[15px] font-semibold tracking-wide">
+          动漫更新看板
         </RouterLink>
 
         <!-- 桌面端：玻璃胶囊导航 -->
@@ -62,7 +59,7 @@ const updateStore = useUpdateStore()
     <nav
       class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface-3 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl sm:hidden"
     >
-      <div class="grid w-full grid-cols-5">
+      <div class="grid w-full grid-cols-7">
         <RouterLink
           v-for="t in tabs"
           :key="t.to"

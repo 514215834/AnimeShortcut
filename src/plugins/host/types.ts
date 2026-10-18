@@ -1,5 +1,35 @@
-/** 插件能力标识（接口规范 §4） */
-export type PluginCapability = 'weekly' | 'latest' | 'search' | 'detail' | 'play'
+/** 插件能力标识（接口规范 §4；v1.2 追加 catalog/rank 扩展能力） */
+export type PluginCapability =
+  | 'weekly'
+  | 'latest'
+  | 'search'
+  | 'detail'
+  | 'play'
+  | 'catalog'
+  | 'rank'
+
+/** 分类筛选组定义（getCatalogMeta 返回） */
+export interface CatalogFilterDef {
+  key: string
+  label: string
+  options: Array<{ value: string; label: string }>
+}
+
+/** 分类查询参数：key 为筛选组 key（如 region/genre），值 "all" 表示不限 */
+export type CatalogQuery = Record<string, string>
+
+export interface RankEntry {
+  rankNo: number
+  animeId: string
+  title: string
+  /** 热度/计数等展示值 */
+  score?: string
+}
+
+export interface RankGroup {
+  name: string
+  entries: RankEntry[]
+}
 
 /** manifest 的用户可配置项声明（接口规范 §4.2） */
 export interface PluginConfigField {
@@ -168,6 +198,11 @@ export interface AnimeSourcePlugin {
   search?(keyword: string, page?: number): Promise<PagedResult<AnimeSummary>>
   getDetail?(animeId: string): Promise<AnimeDetail>
   resolvePlay?(animeId: string, episodeId: string): Promise<PlayResult>
+  /** 分类：meta 返回筛选组定义；getCatalog 按筛选查询（v1.2 扩展能力） */
+  getCatalogMeta?(): CatalogFilterDef[]
+  getCatalog?(query: CatalogQuery, page?: number): Promise<PagedResult<AnimeSummary>>
+  /** 榜单：一次返回各榜单分组（周/月/总等，不分页）（v1.2 扩展能力） */
+  getRank?(year?: string): Promise<RankGroup[]>
   onConfigChange?(config: Record<string, string | number | boolean>): Promise<void>
   onUnload?(): Promise<void>
 }

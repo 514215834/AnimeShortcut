@@ -34,7 +34,8 @@
 | `/v2/update` | GET `page`、`size`（站点默认 size=30） | `{ total: "5666", videos: Item[] }`（total 为字符串） | 最新更新流（分页） |
 | `/v2/search` | GET `query`、`page`（**参数名是 query，不是 keyword**；传 keyword 返回 `{code:40050}`） | `{ code, message, data: { videos: SearchItem[] } }` | 搜索 |
 | `/v2/detail/<AID>` | GET | `{ video: Detail, series, similar, player_label_arr, player_vip, player_jx }` | 详情 + 剧集 + 线路 |
-| `/v2/catalog`、`/v2/rank` 等 | GET（参数未深入探测） | — | 分类/排行（迭代 4 可选） |
+| `/v2/catalog` | GET `region`/`genre`/`letter`/`year`（"all"=不限）+`page`/`size` | `{ total, videos: SearchItem 形态[] }`（含 cover） | 分类浏览（筛选组：地区/版本/首字母/年份 2026~2009） |
+| `/v2/rank` | GET `year`（"all"=不限） | `{ total, rank: [周榜50条, 月榜50条, 总榜50条] }`，条目 `{ NO, AID, CCnt, Title }`（组名按序固定，无封面） | 排行榜 |
 | `/v2/slipic` | GET | — | 轮播图（未深入） |
 
 `week_list` 键 `"0"`~`"6"`（0=周日），周更表直接可用；`WItem` 字段：`{ isnew, id, wd, name, mtime: "2026-10-18 01:02:53", namefornew: "00:30 第4集" }`。
