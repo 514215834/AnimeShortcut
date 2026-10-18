@@ -104,12 +104,21 @@ export const useBoardStore = defineStore('board', () => {
     () => !latestLoading.value && latestPage.value > 0 && latest.value.length === 0,
   )
 
+  /** 配置（代理/数据源）变更后重置最新流，供下次从头拉取 */
+  function resetLatest(): void {
+    latest.value = []
+    latestPage.value = 0
+    latestHasMore.value = true
+    latestError.value = ''
+  }
+
   return {
     weekly,
     weeklyLoading,
     weeklyError,
     activeDay,
     loadWeekly,
+    resetLatest,
     latest,
     latestPage,
     latestHasMore,

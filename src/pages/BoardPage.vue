@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue'
+import { computed, onMounted, useTemplateRef, watch } from 'vue'
 import { useBoardStore } from '../stores/board'
+import { useSettingsStore } from '../stores/settings'
 import { useInfiniteScroll } from '../composables/useInfiniteScroll'
 import AnimeCard from '../components/AnimeCard.vue'
 import SkeletonGrid from '../components/SkeletonGrid.vue'
@@ -33,6 +34,17 @@ onMounted(() => {
   void board.loadWeekly()
   void board.loadMoreLatest()
 })
+
+// 代理地址/数据源启停在设置页变更后，回到看板自动重新拉取
+const settings = useSettingsStore()
+watch(
+  () => settings.configRev,
+  () => {
+    board.resetLatest()
+    void board.loadWeekly()
+    void board.loadMoreLatest()
+  },
+)
 </script>
 
 <template>

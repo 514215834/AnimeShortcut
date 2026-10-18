@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { readJson, writeJson } from '../core/storage/localStore'
 import { setWorkerUrl } from '../core/http/proxyChain'
-
 export interface Settings {
   schemaVersion: number
   /** 自部署 Cloudflare Worker 代理地址（空 = 不使用该通道） */
@@ -25,6 +24,8 @@ const DEFAULTS: Settings = {
 
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<Settings>(migrate(readJson<Settings>(KEY)))
+  /** 配置版本号：代理地址/数据源启停等影响拉取的配置变化时 +1，页面监听后自动刷新数据 */
+  const configRev = ref(0)
 
   function migrate(raw: Settings | null): Settings {
     const merged = { ...DEFAULTS, ...(raw ?? {}) } as Settings
@@ -45,6 +46,7 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.value.proxyWorkerUrl = url.trim()
     setWorkerUrl(settings.value.proxyWorkerUrl)
     save()
+    configRev.value += 1
   }
 
   function setFetchInterval(min: number): void {
@@ -63,6 +65,7 @@ export const useSettingsStore = defineStore('settings', () => {
     else set.delete(id)
     settings.value.enabledSources = Array.from(set)
     save()
+    configRev.value += 1
   }
 
   function isSourceEnabled(id: string): boolean {
@@ -71,6 +74,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     settings,
+    configRev,
     save,
     initHttp,
     setProxyWorkerUrl,

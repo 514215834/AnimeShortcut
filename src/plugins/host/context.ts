@@ -38,10 +38,11 @@ export function createPluginContext(
     if (e instanceof PluginError) return e
     if (e instanceof FetchError) {
       const cause = { cause: e }
-      if (e.kind === 'timeout') return new PluginError('TIMEOUT', '请求超时', cause)
-      if (e.kind === 'parse') return new PluginError('PARSE', '响应不是有效数据', cause)
-      if (e.status === 429) return new PluginError('RATE_LIMITED', '请求过于频繁', cause)
-      if (e.kind === 'http-status') return new PluginError('NETWORK', `HTTP ${e.status}`, cause)
+      // e.message 已含通道标识（如 "请求超时（worker）"），透传给 UI 便于定位
+      if (e.kind === 'timeout') return new PluginError('TIMEOUT', e.message, cause)
+      if (e.kind === 'parse') return new PluginError('PARSE', e.message, cause)
+      if (e.status === 429) return new PluginError('RATE_LIMITED', '请求过于频繁（' + e.channel + '）', cause)
+      if (e.kind === 'http-status') return new PluginError('NETWORK', `HTTP ${e.status}（${e.channel}）`, cause)
       return new PluginError('NETWORK', e.message, cause)
     }
     return new PluginError('UNKNOWN', String(e), { cause: e })
