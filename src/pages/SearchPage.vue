@@ -43,17 +43,17 @@ async function doSearch(): Promise<void> {
 
 <template>
   <div class="mx-auto max-w-xl pt-4 sm:pt-8">
-    <h2 class="mb-4 text-center text-[15px] font-semibold text-gray-700">搜索番剧</h2>
+    <h2 class="mb-4 text-center text-[15px] font-semibold text-ink-2">搜索番剧</h2>
     <form
-      class="flex items-center gap-2 rounded-2xl border border-white/70 bg-white/60 p-1.5 shadow-[0_2px_16px_rgba(30,41,59,0.06)] backdrop-blur-xl"
+      class="flex items-center gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-[0_2px_16px_rgba(30,41,59,0.06)] backdrop-blur-xl"
       @submit.prevent="doSearch"
     >
-      <span class="pl-2.5 text-sm text-gray-400">🔍</span>
+      <span class="pl-2.5 text-sm text-ink-4">🔍</span>
       <input
         v-model="keyword"
         type="search"
         placeholder="输入番剧名称，如：咒术回战"
-        class="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm outline-none placeholder:text-gray-300"
+        class="min-w-0 flex-1 bg-transparent px-1 py-1.5 text-sm outline-none placeholder:text-ink-4/80"
       />
       <button
         type="submit"
@@ -70,7 +70,7 @@ async function doSearch(): Promise<void> {
     <ErrorState v-else-if="error" :message="error" @retry="doSearch" />
     <EmptyState v-else-if="searched && results.length === 0" text="没有找到相关结果" hint="换个关键词试试" />
     <template v-else-if="results.length > 0">
-      <p class="mb-3 text-xs text-gray-400">共 {{ results.length }} 条结果</p>
+      <p class="mb-3 text-xs text-ink-4">共 {{ results.length }} 条结果</p>
       <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
         <AnimeCard v-for="it in results" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
       </div>

@@ -14,7 +14,7 @@ function go(it: AnimeSummary): void {
 <template>
   <button
     type="button"
-    class="group block w-full rounded-2xl border border-white/70 bg-white/60 p-2 text-left shadow-[0_2px_10px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/85 hover:shadow-[0_8px_24px_rgba(30,41,59,0.12)]"
+    class="group block w-full rounded-2xl border border-line bg-surface p-2 text-left shadow-[0_2px_10px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface-2 hover:shadow-[0_8px_24px_rgba(30,41,59,0.12)]"
     @click="go(item)"
   >
     <div class="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gradient-to-br from-gray-100 to-gray-200">
@@ -27,8 +27,8 @@ function go(it: AnimeSummary): void {
         class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
         @error="imgFailed = true"
       />
-      <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent-100/70 to-accent-200/50 p-2">
-        <span class="line-clamp-3 text-center text-xs text-accent-600/80">{{ item.title }}</span>
+      <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent-100/70 to-accent-200/50 dark:from-accent-500/15 dark:to-accent-400/10 p-2">
+        <span class="line-clamp-3 text-center text-xs text-accent-600/80 dark:text-accent-300">{{ item.title }}</span>
       </div>
       <span
         v-if="item.latestEpisodeTitle"
@@ -37,7 +37,7 @@ function go(it: AnimeSummary): void {
         {{ item.latestEpisodeTitle }}
       </span>
     </div>
-    <p class="mt-2 line-clamp-2 text-[13px] leading-snug text-gray-800">{{ item.title }}</p>
-    <p class="mt-0.5 pb-0.5 text-[11px] text-gray-400">{{ item.sourceId }}</p>
+    <p class="mt-2 line-clamp-2 text-[13px] leading-snug text-ink">{{ item.title }}</p>
+    <p class="mt-0.5 pb-0.5 text-[11px] text-ink-4">{{ item.sourceId }}</p>
   </button>
 </template>

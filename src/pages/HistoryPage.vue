@@ -38,9 +38,9 @@ function requestClear(): void {
 <template>
   <div class="w-full">
     <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-[15px] font-semibold text-gray-700">
+      <h2 class="text-[15px] font-semibold text-ink-2">
         观看历史
-        <span v-if="historyStore.loaded" class="ml-1 text-xs font-normal text-gray-400">
+        <span v-if="historyStore.loaded" class="ml-1 text-xs font-normal text-ink-4">
           {{ historyStore.entries.length }} 条
         </span>
       </h2>
@@ -51,7 +51,7 @@ function requestClear(): void {
         :class="
           confirmingClear
             ? 'bg-rose-500 text-white'
-            : 'text-gray-400 hover:bg-rose-50 hover:text-rose-500'
+            : 'text-ink-4 hover:bg-rose-50 hover:text-rose-500'
         "
         @click="requestClear"
       >
@@ -62,7 +62,7 @@ function requestClear(): void {
     <!-- 继续观看 -->
     <div
       v-if="latest"
-      class="mb-4 flex items-center gap-3.5 rounded-2xl border border-accent-100/90 bg-gradient-to-br from-accent-50/80 to-accent-100/40 p-4 backdrop-blur"
+      class="mb-4 flex items-center gap-3.5 rounded-2xl border border-accent-100/90 bg-gradient-to-br from-accent-50/80 to-accent-100/40 dark:border-accent-500/20 dark:from-accent-500/10 dark:to-accent-400/5 p-4 backdrop-blur"
     >
       <img
         v-if="latest.cover"
@@ -74,8 +74,8 @@ function requestClear(): void {
       />
       <div class="min-w-0 flex-1">
         <p class="text-[11px] text-accent-400">继续观看</p>
-        <p class="truncate text-[13.5px] font-medium text-gray-800">{{ latest.title }}</p>
-        <p class="mt-0.5 truncate text-xs text-gray-500">上次看到：{{ latest.episodeTitle }}</p>
+        <p class="truncate text-[13.5px] font-medium text-ink">{{ latest.title }}</p>
+        <p class="mt-0.5 truncate text-xs text-ink-3">上次看到：{{ latest.episodeTitle }}</p>
       </div>
       <button
         type="button"
@@ -94,19 +94,19 @@ function requestClear(): void {
     />
     <ul
       v-else
-      class="divide-y divide-white/70 overflow-hidden rounded-2xl border border-white/70 bg-white/60 backdrop-blur"
+      class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface backdrop-blur"
     >
       <li v-for="e in historyStore.entries" :key="e.key">
-        <div class="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-white/80">
+        <div class="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2">
           <button type="button" class="min-w-0 flex-1 text-left" @click="openEntry(e.playPageUrl)">
-            <p class="truncate text-[13.5px] text-gray-800">
-              {{ e.episodeTitle }} · <span class="text-gray-500">{{ e.title }}</span>
+            <p class="truncate text-[13.5px] text-ink">
+              {{ e.episodeTitle }} · <span class="text-ink-3">{{ e.title }}</span>
             </p>
-            <p class="mt-0.5 text-[11px] text-gray-400">{{ fmtTime(e.watchedAt) }}</p>
+            <p class="mt-0.5 text-[11px] text-ink-4">{{ fmtTime(e.watchedAt) }}</p>
           </button>
           <button
             type="button"
-            class="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-gray-400 transition hover:bg-rose-50 hover:text-rose-500"
+            class="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-ink-4 transition hover:bg-rose-50 hover:text-rose-500"
             @click="historyStore.remove(e.key)"
           >
             ✕

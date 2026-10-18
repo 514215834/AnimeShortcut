@@ -65,21 +65,21 @@ watch(
   <RouterLink
     v-if="updateStore.totalNew > 0"
     to="/subscriptions"
-    class="mb-5 flex items-center gap-2 rounded-2xl border border-rose-100/90 bg-gradient-to-br from-rose-50/80 to-amber-50/50 px-4 py-3 text-[13px] text-rose-600 backdrop-blur transition hover:from-rose-100/70"
+    class="mb-5 flex items-center gap-2 rounded-2xl border border-rose-100/90 bg-gradient-to-br from-rose-50/80 to-amber-50/50 dark:border-rose-500/20 dark:from-rose-500/10 dark:to-amber-500/10 px-4 py-3 text-[13px] text-rose-600 backdrop-blur transition hover:from-rose-100/70"
   >
     ⭐ 你的追番有 {{ updateStore.totalNew }} 集更新，去看看
     <span class="ml-auto">→</span>
   </RouterLink>
 
   <!-- 看板视图切换：每周更新 / 最新更新 -->
-  <div class="mb-5 inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/50 p-1 backdrop-blur">
+  <div class="mb-5 inline-flex items-center gap-1 rounded-full border border-line bg-white/50 dark:bg-white/5 p-1 backdrop-blur">
     <button
       type="button"
       class="rounded-full px-4 py-1.5 text-[13px] transition-all duration-200"
       :class="
         board.activeView === 'weekly'
           ? 'bg-accent-600 font-medium text-white shadow-sm'
-          : 'text-gray-600 hover:bg-white/80'
+          : 'text-ink-2 hover:bg-surface-2'
       "
       @click="board.activeView = 'weekly'"
     >
@@ -91,7 +91,7 @@ watch(
       :class="
         board.activeView === 'latest'
           ? 'bg-accent-600 font-medium text-white shadow-sm'
-          : 'text-gray-600 hover:bg-white/80'
+          : 'text-ink-2 hover:bg-surface-2'
       "
       @click="board.activeView = 'latest'"
     >
@@ -102,10 +102,10 @@ watch(
   <!-- ============ 每周更新视图 ============ -->
   <section v-if="board.activeView === 'weekly'">
     <div class="mb-3 flex items-baseline justify-between">
-      <h2 class="text-[15px] font-semibold text-gray-700">
+      <h2 class="text-[15px] font-semibold text-ink-2">
         {{ dayLabels[board.activeDay >= 0 ? board.activeDay : 0] ?? '' }}{{ board.activeDay >= 0 ? '' : '未定档' }}更新
       </h2>
-      <span class="text-xs text-gray-400">共 {{ currentList.length }} 部</span>
+      <span class="text-xs text-ink-4">共 {{ currentList.length }} 部</span>
     </div>
 
     <SkeletonGrid v-if="board.weeklyLoading" :count="12" />
@@ -116,11 +116,11 @@ watch(
       @retry="board.loadWeekly()"
     />
     <template v-else>
-      <p v-if="board.weeklyError" class="mb-2 text-xs text-amber-600">{{ board.weeklyError }}</p>
+      <p v-if="board.weeklyError" class="mb-2 text-xs text-amber-600 dark:text-amber-400">{{ board.weeklyError }}</p>
 
       <!-- 分段式玻璃胶囊：周日~周六 + 未定档 -->
       <div
-        class="mb-4 inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/70 bg-white/50 p-1 backdrop-blur"
+        class="mb-4 inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-line bg-white/50 dark:bg-white/5 p-1 backdrop-blur"
       >
         <button
           v-for="t in dayTabs"
@@ -130,12 +130,12 @@ watch(
           :class="
             board.activeDay === t.day
               ? 'bg-accent-600 font-medium text-white shadow-sm'
-              : 'text-gray-600 hover:bg-white/80'
+              : 'text-ink-2 hover:bg-surface-2'
           "
           @click="board.activeDay = t.day"
         >
           {{ t.label }}
-          <span class="ml-0.5 text-[10px]" :class="board.activeDay === t.day ? 'opacity-80' : 'text-gray-400'">
+          <span class="ml-0.5 text-[10px]" :class="board.activeDay === t.day ? 'opacity-80' : 'text-ink-4'">
             {{ t.count }}
           </span>
         </button>
@@ -152,8 +152,8 @@ watch(
   <!-- ============ 最新更新视图 ============ -->
   <section v-else>
     <div class="mb-3 flex items-baseline justify-between">
-      <h2 class="text-[15px] font-semibold text-gray-700">最新更新</h2>
-      <span class="text-xs text-gray-400">已收录 {{ board.latest.length }} 条</span>
+      <h2 class="text-[15px] font-semibold text-ink-2">最新更新</h2>
+      <span class="text-xs text-ink-4">已收录 {{ board.latest.length }} 条</span>
     </div>
 
     <SkeletonGrid v-if="board.latestPage === 0 && board.latestLoading" :count="12" />
@@ -168,7 +168,7 @@ watch(
       <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
         <AnimeCard v-for="it in board.latest" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
       </div>
-      <div ref="sentinel" class="py-8 text-center text-xs text-gray-400">
+      <div ref="sentinel" class="py-8 text-center text-xs text-ink-4">
         <template v-if="board.latestLoading">
           <span class="inline-flex items-center gap-1.5">
             <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-400" />

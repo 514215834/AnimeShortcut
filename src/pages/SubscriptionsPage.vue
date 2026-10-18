@@ -39,7 +39,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
 <template>
   <div class="mx-auto w-full">
     <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-[15px] font-semibold text-gray-700">
+      <h2 class="text-[15px] font-semibold text-ink-2">
         我的追番
         <span v-if="update.totalNew > 0" class="ml-1.5 align-middle text-[11px] text-rose-500">
           {{ update.totalNew }} 集未看
@@ -47,7 +47,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
       </h2>
       <select
         v-model="sortMode"
-        class="rounded-xl border border-white/80 bg-white/70 px-2.5 py-1.5 text-xs outline-none focus:border-accent-300"
+        class="rounded-xl border border-line-2 bg-surface-3 px-2.5 py-1.5 text-xs outline-none focus:border-accent-300"
       >
         <option value="updated">有更新优先</option>
         <option value="added">按加入时间</option>
@@ -67,13 +67,13 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
         :class="
           statusFilter === f.v
             ? 'border-accent-200 bg-accent-600 text-white'
-            : 'border-white/80 bg-white/60 text-gray-600 hover:bg-white/85'
+            : 'border-line-2 bg-surface text-ink-2 hover:bg-surface-2'
         "
         @click="statusFilter = f.v as 'all' | 'ongoing' | 'finished'"
       >
         {{ f.label }}
       </button>
-      <span v-if="update.checking" class="ml-auto self-center text-[11px] text-gray-400">检测更新中…</span>
+      <span v-if="update.checking" class="ml-auto self-center text-[11px] text-ink-4">检测更新中…</span>
     </div>
 
     <p v-if="hasFailures" class="mb-3 rounded-xl bg-amber-50/80 px-3 py-2 text-xs text-amber-600">
@@ -88,10 +88,10 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
     />
     <ul
       v-else
-      class="divide-y divide-white/70 overflow-hidden rounded-2xl border border-white/70 bg-white/60 backdrop-blur"
+      class="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface backdrop-blur"
     >
       <li v-for="s in displayList" :key="s.key">
-        <div class="flex items-center gap-3 px-4 py-3 transition hover:bg-white/80">
+        <div class="flex items-center gap-3 px-4 py-3 transition hover:bg-surface-2">
           <img
             v-if="s.cover"
             :src="s.cover"
@@ -104,7 +104,7 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
             :to="`/anime/${s.sourceId}/${s.animeId}`"
             class="min-w-0 flex-1"
           >
-            <p class="flex items-center gap-1.5 truncate text-[13.5px] font-medium text-gray-800">
+            <p class="flex items-center gap-1.5 truncate text-[13.5px] font-medium text-ink">
               {{ s.title }}
               <span
                 v-if="(update.counts[s.key] ?? 0) > 0"
@@ -113,13 +113,13 @@ const hasFailures = computed(() => update.consecutiveFailures >= 3)
                 +{{ update.counts[s.key] }}
               </span>
             </p>
-            <p class="mt-0.5 truncate text-xs text-gray-400">
+            <p class="mt-0.5 truncate text-xs text-ink-4">
               最新：{{ update.latestTitles[s.key] ?? '待检测' }}
             </p>
           </RouterLink>
           <button
             type="button"
-            class="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-gray-400 transition hover:bg-rose-50 hover:text-rose-500"
+            class="shrink-0 rounded-full px-2.5 py-1 text-[11px] text-ink-4 transition hover:bg-rose-50 hover:text-rose-500"
             title="取消追番"
             @click="subStore.remove(s.key)"
           >

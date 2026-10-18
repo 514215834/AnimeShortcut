@@ -103,21 +103,21 @@ function openPlay(ep: Episode): void {
 <template>
   <RouterLink
     to="/"
-    class="mb-4 inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/60 px-3 py-1.5 text-[13px] text-gray-600 backdrop-blur transition hover:bg-white/85 hover:text-gray-900"
+    class="mb-4 inline-flex items-center gap-1 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] text-ink-2 backdrop-blur transition hover:bg-surface-2 hover:text-ink"
   >
     ← 返回看板
   </RouterLink>
 
-  <div v-if="loading" class="rounded-2xl border border-white/70 bg-white/60 p-5 backdrop-blur">
+  <div v-if="loading" class="rounded-2xl border border-line bg-surface p-5 backdrop-blur">
     <div class="flex animate-pulse gap-5">
-      <div class="aspect-[3/4] w-28 shrink-0 rounded-xl bg-gray-200/90 sm:w-36" />
+      <div class="aspect-[3/4] w-28 shrink-0 rounded-xl bg-gray-200/90 dark:bg-white/10 sm:w-36" />
       <div class="flex-1 space-y-2.5 py-1">
-        <div class="h-5 w-3/5 rounded-full bg-gray-200/90" />
-        <div class="h-3 w-2/5 rounded-full bg-gray-100/90" />
-        <div class="h-3 w-1/3 rounded-full bg-gray-100/90" />
+        <div class="h-5 w-3/5 rounded-full bg-gray-200/90 dark:bg-white/10" />
+        <div class="h-3 w-2/5 rounded-full bg-gray-100/90 dark:bg-white/5" />
+        <div class="h-3 w-1/3 rounded-full bg-gray-100/90 dark:bg-white/5" />
         <div class="flex gap-1.5 pt-1">
-          <div class="h-5 w-12 rounded-full bg-gray-100/90" />
-          <div class="h-5 w-12 rounded-full bg-gray-100/90" />
+          <div class="h-5 w-12 rounded-full bg-gray-100/90 dark:bg-white/5" />
+          <div class="h-5 w-12 rounded-full bg-gray-100/90 dark:bg-white/5" />
         </div>
       </div>
     </div>
@@ -130,25 +130,25 @@ function openPlay(ep: Episode): void {
   <template v-else-if="detail">
     <!-- 头部信息：玻璃卡片 -->
     <div
-      class="flex gap-5 rounded-2xl border border-white/70 bg-white/60 p-4 shadow-[0_2px_16px_rgba(30,41,59,0.05)] backdrop-blur-xl sm:p-5"
+      class="flex gap-5 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_16px_rgba(30,41,59,0.05)] backdrop-blur-xl sm:p-5"
     >
       <img
         v-if="detail.cover"
         :src="detail.cover"
         :alt="detail.title"
         referrerpolicy="no-referrer"
-        class="aspect-[3/4] w-28 shrink-0 rounded-xl bg-gray-200 object-cover shadow-md sm:w-36"
+        class="aspect-[3/4] w-28 shrink-0 rounded-xl bg-gray-200 dark:bg-white/10 object-cover shadow-md sm:w-36"
       />
       <div class="min-w-0 flex-1">
         <div class="flex items-start justify-between gap-2">
-          <h1 class="text-lg font-semibold leading-snug text-gray-900">{{ detail.title }}</h1>
+          <h1 class="text-lg font-semibold leading-snug text-ink">{{ detail.title }}</h1>
           <button
             type="button"
             class="shrink-0 rounded-full border px-3 py-1.5 text-xs transition active:scale-95"
             :class="
               subscribed
                 ? 'border-amber-200/90 bg-amber-50/90 text-amber-600'
-                : 'border-white/80 bg-white/70 text-gray-600 hover:border-amber-300 hover:text-amber-500'
+                : 'border-line-2 bg-surface-3 text-ink-2 hover:border-amber-300 hover:text-amber-500'
             "
             @click="toggleSubscribe"
           >
@@ -161,16 +161,16 @@ function openPlay(ep: Episode): void {
             class="rounded-full px-2 py-0.5"
             :class="
               detail.status === 'finished'
-                ? 'bg-gray-100/90 text-gray-500'
+                ? 'bg-gray-100/90 dark:bg-white/5 text-ink-3'
                 : 'bg-emerald-50/90 text-emerald-600'
             "
           >
             {{ statusLabel }}
           </span>
-          <span v-if="detail.region" class="text-gray-400">{{ detail.region }}</span>
+          <span v-if="detail.region" class="text-ink-4">{{ detail.region }}</span>
         </div>
-        <p v-if="detail.latestEpisodeTitle" class="mt-2 text-xs text-gray-500">
-          最近更新：<span class="text-gray-700">{{ detail.latestEpisodeTitle }}</span>
+        <p v-if="detail.latestEpisodeTitle" class="mt-2 text-xs text-ink-3">
+          最近更新：<span class="text-ink-2">{{ detail.latestEpisodeTitle }}</span>
         </p>
         <div v-if="detail.genres.length > 0" class="mt-2.5 flex flex-wrap gap-1.5">
           <span
@@ -187,11 +187,11 @@ function openPlay(ep: Episode): void {
     <!-- 简介 -->
     <div
       v-if="detail.description"
-      class="mt-4 rounded-2xl border border-white/70 bg-white/50 p-4 backdrop-blur"
+      class="mt-4 rounded-2xl border border-line bg-white/50 dark:bg-white/5 p-4 backdrop-blur"
     >
-      <h3 class="mb-1.5 text-xs font-semibold tracking-wide text-gray-400">简介</h3>
+      <h3 class="mb-1.5 text-xs font-semibold tracking-wide text-ink-4">简介</h3>
       <p
-        class="whitespace-pre-line text-[13px] leading-relaxed text-gray-600"
+        class="whitespace-pre-line text-[13px] leading-relaxed text-ink-2"
         :class="showFullDesc ? '' : 'line-clamp-3'"
       >
         {{ detail.description }}
@@ -208,12 +208,12 @@ function openPlay(ep: Episode): void {
     <!-- 剧集 -->
     <section v-if="lines.length > 0" class="mt-6">
       <div class="mb-3 flex items-baseline justify-between">
-        <h3 class="text-[15px] font-semibold text-gray-700">选集播放</h3>
-        <span class="text-xs text-gray-400">共 {{ detail.episodes.length }} 集 · {{ lines.length }} 条线路</span>
+        <h3 class="text-[15px] font-semibold text-ink-2">选集播放</h3>
+        <span class="text-xs text-ink-4">共 {{ detail.episodes.length }} 集 · {{ lines.length }} 条线路</span>
       </div>
 
       <div
-        class="mb-3 inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/70 bg-white/50 p-1 backdrop-blur"
+        class="mb-3 inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-line bg-white/50 dark:bg-white/5 p-1 backdrop-blur"
       >
         <button
           v-for="(ln, i) in lines"
@@ -223,12 +223,12 @@ function openPlay(ep: Episode): void {
           :class="
             activeLine === i
               ? 'bg-accent-600 font-medium text-white shadow-sm'
-              : 'text-gray-600 hover:bg-white/80'
+              : 'text-ink-2 hover:bg-surface-2'
           "
           @click="activeLine = i"
         >
           {{ ln.name }}
-          <span class="ml-0.5 text-[10px]" :class="activeLine === i ? 'opacity-80' : 'text-gray-400'">
+          <span class="ml-0.5 text-[10px]" :class="activeLine === i ? 'opacity-80' : 'text-ink-4'">
             {{ ln.eps.length }}
           </span>
         </button>
@@ -239,13 +239,13 @@ function openPlay(ep: Episode): void {
           v-for="ep in currentEps"
           :key="ep.episodeId"
           type="button"
-          class="rounded-xl border border-white/80 bg-white/70 px-2 py-2 text-[13px] text-gray-700 shadow-[0_1px_6px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-150 hover:border-accent-300 hover:bg-accent-50/80 hover:text-accent-600 active:scale-[0.97]"
+          class="rounded-xl border border-line-2 bg-surface-3 px-2 py-2 text-[13px] text-ink-2 shadow-[0_1px_6px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-150 hover:border-accent-300 hover:bg-accent-50/80 hover:text-accent-600 active:scale-[0.97]"
           @click="openPlay(ep)"
         >
           {{ ep.title }}
         </button>
       </div>
-      <p class="mt-3 text-[11px] text-gray-400">
+      <p class="mt-3 text-[11px] text-ink-4">
         点击剧集将在新窗口打开源站播放页（{{ detail.sourceId }}）
       </p>
     </section>

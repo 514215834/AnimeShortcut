@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { readJson, writeJson } from '../core/storage/localStore'
 import { setWorkerUrl } from '../core/http/proxyChain'
-import { applyTheme } from '../theme'
+import { applyTheme, type ThemeMode } from '../theme'
 export interface Settings {
   schemaVersion: number
   /** 自部署 Cloudflare Worker 代理地址（空 = 不使用该通道） */
@@ -14,6 +14,8 @@ export interface Settings {
   enabledSources: string[]
   /** 主题色预设 id（src/theme.ts ACCENT_PRESETS） */
   accent: string
+  /** 明暗模式 */
+  themeMode: ThemeMode
   /** 背景光斑开 */
   bgGlow: boolean
 }
@@ -26,6 +28,7 @@ const DEFAULTS: Settings = {
   notificationsEnabled: true,
   enabledSources: ['agedm'],
   accent: 'indigo',
+  themeMode: 'light',
   bgGlow: true,
 }
 
@@ -82,18 +85,24 @@ export const useSettingsStore = defineStore('settings', () => {
   function setAccent(id: string): void {
     settings.value.accent = id
     save()
-    applyTheme(settings.value.accent, settings.value.bgGlow)
+    applyTheme(settings.value.accent, settings.value.bgGlow, settings.value.themeMode)
+  }
+
+  function setThemeMode(mode: ThemeMode): void {
+    settings.value.themeMode = mode
+    save()
+    applyTheme(settings.value.accent, settings.value.bgGlow, mode)
   }
 
   function setBgGlow(on: boolean): void {
     settings.value.bgGlow = on
     save()
-    applyTheme(settings.value.accent, settings.value.bgGlow)
+    applyTheme(settings.value.accent, settings.value.bgGlow, settings.value.themeMode)
   }
 
   /** 启动时应用已保存的主题 */
   function initTheme(): void {
-    applyTheme(settings.value.accent, settings.value.bgGlow)
+    applyTheme(settings.value.accent, settings.value.bgGlow, settings.value.themeMode)
   }
 
   return {
@@ -103,6 +112,7 @@ export const useSettingsStore = defineStore('settings', () => {
     initHttp,
     initTheme,
     setAccent,
+    setThemeMode,
     setBgGlow,
     setProxyWorkerUrl,
     setFetchInterval,

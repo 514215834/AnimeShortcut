@@ -1,6 +1,9 @@
 /**
- * 主题系统：主题色预设（改写 Tailwind @theme 生成的 --color-accent-* 变量）
- * 与背景光斑开关。settings store 的动作在变更时调用 applyTheme。
+ * 主题系统：
+ * - 主题色预设：改写 Tailwind @theme 生成的 --color-accent-* 变量，全局换色
+ * - 明暗模式：light / dark / system（跟随系统），类名 .dark 驱动
+ * - 背景光斑开关：html.bg-plain-off
+ * settings store 的动作在变更时调用 applyTheme。
  */
 
 export const ACCENT_SHADES = ['50', '100', '200', '300', '400', '500', '600', '700'] as const
@@ -45,10 +48,41 @@ export const ACCENT_PRESETS: AccentPreset[] = [
   },
 ]
 
-export function applyTheme(accentId: string, bgGlow: boolean): void {
+export type ThemeMode = 'light' | 'dark' | 'system'
+
+export const THEME_MODES: Array<{ id: ThemeMode; name: string }> = [
+  { id: 'light', name: '浅色' },
+  { id: 'dark', name: '深色' },
+  { id: 'system', name: '跟随系统' },
+]
+
+function resolveDark(mode: ThemeMode): boolean {
+  if (mode === 'dark') return true
+  if (mode === 'light') return false
+  return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+let mediaBound = false
+let lastArgs: { accent: string; glow: boolean; mode: ThemeMode } | null = null
+
+function render(accentId: string, bgGlow: boolean, mode: ThemeMode): void {
   const preset = ACCENT_PRESETS.find((p) => p.id === accentId) ?? ACCENT_PRESETS[0]
   for (const shade of ACCENT_SHADES) {
     document.documentElement.style.setProperty(`--color-accent-${shade}`, preset.shades[shade])
   }
+  document.documentElement.classList.toggle('dark', resolveDark(mode))
   document.documentElement.classList.toggle('bg-plain-off', !bgGlow)
+}
+
+export function applyTheme(accentId: string, bgGlow: boolean, mode: ThemeMode = 'light'): void {
+  lastArgs = { accent: accentId, glow: bgGlow, mode }
+  render(accentId, bgGlow, mode)
+
+  // system 模式下监听系统明暗变化，即时跟随
+  if (!mediaBound && typeof matchMedia !== 'undefined') {
+    mediaBound = true
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (lastArgs) render(lastArgs.accent, lastArgs.glow, lastArgs.mode)
+    })
+  }
 }

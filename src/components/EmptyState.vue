@@ -4,9 +4,9 @@ defineProps<{ text: string; hint?: string }>()
 
 <template>
   <div
-    class="rounded-2xl border border-dashed border-gray-300/70 bg-white/50 p-10 text-center backdrop-blur"
+    class="rounded-2xl border border-dashed border-gray-300/70 bg-white/50 dark:bg-white/5 p-10 text-center backdrop-blur"
   >
-    <p class="text-sm text-gray-500">{{ text }}</p>
-    <p v-if="hint" class="mt-1.5 text-xs text-gray-400">{{ hint }}</p>
+    <p class="text-sm text-ink-3">{{ text }}</p>
+    <p v-if="hint" class="mt-1.5 text-xs text-ink-4">{{ hint }}</p>
   </div>
 </template>
