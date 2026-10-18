@@ -4,7 +4,7 @@ export const manifest: PluginManifest = {
   manifestVersion: '1.0',
   id: 'agedm',
   name: 'Age动漫',
-  version: '1.0.0',
+  version: '1.2.0',
   siteUrl: 'https://m.agedm.io',
   type: 'builtin',
   entry: 'plugins/sources/agedm/index.ts',
