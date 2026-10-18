@@ -3,6 +3,10 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { AnimeDetail, Episode } from '../plugins/host/types'
 import { sources } from '../plugins/host/host'
+import { useSubscriptionStore } from '../stores/subscription'
+import { useHistoryStore } from '../stores/history'
+import { useUpdateStore } from '../stores/update'
+import { primaryLatest } from '../services/diff'
 
 const route = useRoute()
 const sourceId = computed(() => String(route.params.sourceId ?? ''))
@@ -14,6 +18,12 @@ const error = ref('')
 const showFullDesc = ref(false)
 const activeLine = ref(0)
 
+const subStore = useSubscriptionStore()
+const historyStore = useHistoryStore()
+const updateStore = useUpdateStore()
+
+const subscribed = computed(() => subStore.isSubscribed(sourceId.value, animeId.value))
+
 async function load(): Promise<void> {
   if (!sourceId.value || !animeId.value) {
     error.value = '地址缺少番剧标识'
@@ -24,6 +34,15 @@ async function load(): Promise<void> {
   detail.value = null
   try {
     detail.value = await sources.detail(sourceId.value, animeId.value)
+    // 已读指针：进入详情即视为已读最新，红点清除
+    const key = `${sourceId.value}:${animeId.value}`
+    if (subStore.isSubscribed(sourceId.value, animeId.value)) {
+      const latest = primaryLatest(detail.value)
+      if (latest) {
+        void subStore.markSeen(key, latest.episodeIndex, latest.episodeId)
+        updateStore.clearKey(key)
+      }
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -55,8 +74,29 @@ const statusLabel = computed(() => {
   return map[detail.value?.status ?? 'unknown'] ?? ''
 })
 
+async function toggleSubscribe(): Promise<void> {
+  if (!detail.value) return
+  if (subscribed.value) {
+    await subStore.remove(`${sourceId.value}:${animeId.value}`)
+  } else {
+    await subStore.add(detail.value)
+  }
+}
+
 function openPlay(ep: Episode): void {
-  if (ep.playPageUrl) window.open(ep.playPageUrl, '_blank', 'noopener')
+  if (!ep.playPageUrl || !detail.value) return
+  if (detail.value.sourceId) {
+    void historyStore.record({
+      sourceId: detail.value.sourceId,
+      animeId: detail.value.animeId,
+      episodeId: ep.episodeId,
+      title: detail.value.title,
+      episodeTitle: ep.title,
+      cover: detail.value.cover,
+      playPageUrl: ep.playPageUrl,
+    })
+  }
+  window.open(ep.playPageUrl, '_blank', 'noopener')
 }
 </script>
 
@@ -100,7 +140,21 @@ function openPlay(ep: Episode): void {
         class="aspect-[3/4] w-28 shrink-0 rounded-xl bg-gray-200 object-cover shadow-md sm:w-36"
       />
       <div class="min-w-0 flex-1">
-        <h1 class="text-lg font-semibold leading-snug text-gray-900">{{ detail.title }}</h1>
+        <div class="flex items-start justify-between gap-2">
+          <h1 class="text-lg font-semibold leading-snug text-gray-900">{{ detail.title }}</h1>
+          <button
+            type="button"
+            class="shrink-0 rounded-full border px-3 py-1.5 text-xs transition active:scale-95"
+            :class="
+              subscribed
+                ? 'border-amber-200/90 bg-amber-50/90 text-amber-600'
+                : 'border-white/80 bg-white/70 text-gray-600 hover:border-amber-300 hover:text-amber-500'
+            "
+            @click="toggleSubscribe"
+          >
+            {{ subscribed ? '★ 已追番' : '☆ 追番' }}
+          </button>
+        </div>
         <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
           <span
             v-if="statusLabel"

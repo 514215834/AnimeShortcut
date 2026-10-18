@@ -8,8 +8,10 @@ import SkeletonGrid from '../components/SkeletonGrid.vue'
 import SkeletonList from '../components/SkeletonList.vue'
 import ErrorState from '../components/ErrorState.vue'
 import EmptyState from '../components/EmptyState.vue'
+import { useUpdateStore } from '../stores/update'
 
 const board = useBoardStore()
+const updateStore = useUpdateStore()
 
 const sentinel = useTemplateRef<HTMLElement | null>('sentinel')
 useInfiniteScroll(sentinel, () => void board.loadMoreLatest())
@@ -52,6 +54,15 @@ watch(
 </script>
 
 <template>
+  <RouterLink
+    v-if="updateStore.totalNew > 0"
+    to="/subscriptions"
+    class="mb-5 flex items-center gap-2 rounded-2xl border border-rose-100/90 bg-gradient-to-br from-rose-50/80 to-amber-50/50 px-4 py-3 text-[13px] text-rose-600 backdrop-blur transition hover:from-rose-100/70"
+  >
+    ⭐ 你的追番有 {{ updateStore.totalNew }} 集更新，去看看
+    <span class="ml-auto">→</span>
+  </RouterLink>
+
   <section>
     <div class="mb-3 flex items-baseline justify-between">
       <h2 class="text-[15px] font-semibold text-gray-700">每周更新时间表</h2>

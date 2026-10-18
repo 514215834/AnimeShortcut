@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import { useSettingsStore } from './stores/settings'
 import { initPluginHost } from './plugins/host/host'
+import { startUpdateChecker, runCheck } from './services/updateChecker'
 import './assets/main.css'
 
 async function bootstrap(): Promise<void> {
@@ -23,6 +24,10 @@ async function bootstrap(): Promise<void> {
 
   app.use(router)
   app.mount('#app')
+
+  // 更新检测：可见性/间隔调度由服务内部管理
+  startUpdateChecker()
+  void runCheck(false)
 }
 
 void bootstrap()

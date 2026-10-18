@@ -24,7 +24,25 @@ function saveInterval(): void {
   settings.setFetchInterval(Number(interval.value) || 30)
 }
 
-function saveNotify(): void {
+const notifyDenied = ref(false)
+
+async function saveNotify(): Promise<void> {
+  if (notify.value) {
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      try {
+        const p = await Notification.requestPermission()
+        if (p !== 'granted') {
+          notify.value = false
+          notifyDenied.value = true
+        } else {
+          notifyDenied.value = false
+        }
+      } catch {
+        notify.value = false
+        notifyDenied.value = true
+      }
+    }
+  }
   settings.setNotificationsEnabled(notify.value)
 }
 
@@ -139,10 +157,7 @@ async function runTest(): Promise<void> {
         </select>
       </div>
       <div class="mt-3 flex items-center justify-between">
-        <span class="text-[13.5px] text-gray-700">
-          更新通知
-          <span class="ml-1 rounded-full bg-gray-100/90 px-1.5 py-0.5 text-[10px] text-gray-400">迭代 2 生效</span>
-        </span>
+        <span class="text-[13.5px] text-gray-700">更新通知</span>
         <input
           v-model="notify"
           type="checkbox"
@@ -150,6 +165,9 @@ async function runTest(): Promise<void> {
           @change="saveNotify"
         />
       </div>
+      <p v-if="notifyDenied" class="mt-2 text-xs text-amber-600">
+        浏览器未授予通知权限，已保持关闭；可在浏览器设置里放行后重新开启。
+      </p>
       <p class="mt-2.5 text-[11px] leading-relaxed text-gray-400">
         GitHub Pages 无后端，更新提醒在页面打开时进行；浏览器关闭期间无法推送。
       </p>

@@ -94,6 +94,7 @@ async function invoke<T>(
   args: unknown[],
   run: (plugin: import('./types').AnimeSourcePlugin) => Promise<T>,
   post?: (data: T) => T,
+  opts?: { bypassCache?: boolean },
 ): Promise<T> {
   const l = loaded.get(sourceId)
   if (!l) throw new PluginError('UNSUPPORTED', `数据源未加载: ${sourceId}`)
@@ -108,7 +109,7 @@ async function invoke<T>(
 
   const ttl = hintFor(l, cap)
   const key = `plugin:${sourceId}:${cap}:${JSON.stringify(args)}`
-  if (ttl > 0) {
+  if (ttl > 0 && !opts?.bypassCache) {
     const hit = cacheGet<T>(key)
     if (hit) return hit.data
   }
@@ -134,8 +135,15 @@ export const sources = {
   search(sourceId: string, keyword: string, page = 1): Promise<PagedResult<AnimeSummary>> {
     return invoke(sourceId, 'search', [keyword, page], (p) => p.search!(keyword, page), tagItems(sourceId))
   },
-  detail(sourceId: string, animeId: string): Promise<AnimeDetail> {
-    return invoke(sourceId, 'detail', [animeId], (p) => p.getDetail!(animeId), (d) => ({ ...d, sourceId }))
+  detail(sourceId: string, animeId: string, cacheOpts?: { fresh?: boolean }): Promise<AnimeDetail> {
+    return invoke(
+      sourceId,
+      'detail',
+      [animeId],
+      (p) => p.getDetail!(animeId),
+      (d) => ({ ...d, sourceId }),
+      cacheOpts?.fresh ? { bypassCache: true } : undefined,
+    )
   },
   play(sourceId: string, animeId: string, episodeId: string): Promise<PlayResult> {
     return invoke(sourceId, 'play', [animeId, episodeId], (p) => p.resolvePlay!(animeId, episodeId))

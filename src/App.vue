@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useUpdateStore } from './stores/update'
+
 const tabs = [
   { to: '/', label: '看板', icon: '🗓️' },
   { to: '/search', label: '搜索', icon: '🔍' },
@@ -6,6 +8,8 @@ const tabs = [
   { to: '/history', label: '历史', icon: '🕘' },
   { to: '/settings', label: '设置', icon: '⚙️' },
 ]
+
+const updateStore = useUpdateStore()
 </script>
 
 <template>
@@ -29,10 +33,16 @@ const tabs = [
             v-for="t in tabs"
             :key="t.to"
             :to="t.to"
-            class="rounded-full px-3.5 py-1.5 text-sm text-gray-600 transition hover:text-gray-900"
+            class="relative rounded-full px-3.5 py-1.5 text-sm text-gray-600 transition hover:text-gray-900"
             exact-active-class="bg-indigo-600 font-medium text-white shadow-sm hover:text-white"
           >
             {{ t.label }}
+            <span
+              v-if="t.to === '/subscriptions' && updateStore.totalNew > 0"
+              class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] text-white"
+            >
+              {{ updateStore.totalNew }}
+            </span>
           </RouterLink>
         </nav>
 
@@ -57,10 +67,18 @@ const tabs = [
           v-for="t in tabs"
           :key="t.to"
           :to="t.to"
-          class="flex flex-col items-center gap-0.5 py-2 text-[10px] text-gray-500 transition"
+          class="relative flex flex-col items-center gap-0.5 py-2 text-[10px] text-gray-500 transition"
           exact-active-class="text-indigo-600"
         >
-          <span class="text-base leading-none">{{ t.icon }}</span>
+          <span class="relative text-base leading-none">
+            {{ t.icon }}
+            <span
+              v-if="t.to === '/subscriptions' && updateStore.totalNew > 0"
+              class="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] text-white"
+            >
+              {{ updateStore.totalNew }}
+            </span>
+          </span>
           {{ t.label }}
         </RouterLink>
       </div>
