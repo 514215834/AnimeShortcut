@@ -6,3 +6,4 @@ coverage
 .vite
 .DS_Store
 .zcode/
+public/plugins/

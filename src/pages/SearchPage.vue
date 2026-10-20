@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { AnimeSummary } from '../plugins/host/types'
 import { listSources, sources } from '../plugins/host/host'
 import { useSettingsStore } from '../stores/settings'
+import { mergeByTitle, type MergedCard } from '../services/merge'
 import AnimeCard from '../components/AnimeCard.vue'
 import SkeletonGrid from '../components/SkeletonGrid.vue'
 import ErrorState from '../components/ErrorState.vue'
@@ -12,7 +13,7 @@ const settings = useSettingsStore()
 const keyword = ref('')
 const searching = ref(false)
 const searched = ref(false)
-const results = ref<AnimeSummary[]>([])
+const results = ref<MergedCard[]>([])
 const error = ref('')
 
 async function doSearch(): Promise<void> {
@@ -32,7 +33,7 @@ async function doSearch(): Promise<void> {
         failures.push(`${src.name}: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
-    results.value = collected.sort((a, b) => (b.updateTime ?? 0) - (a.updateTime ?? 0))
+    results.value = mergeByTitle(collected)
     error.value = collected.length === 0 ? failures.join('；') : ''
   } finally {
     searching.value = false
@@ -70,9 +71,9 @@ async function doSearch(): Promise<void> {
     <ErrorState v-else-if="error" :message="error" @retry="doSearch" />
     <EmptyState v-else-if="searched && results.length === 0" text="没有找到相关结果" hint="换个关键词试试" />
     <template v-else-if="results.length > 0">
-      <p class="mb-3 text-xs text-ink-4">共 {{ results.length }} 条结果</p>
+      <p class="mb-3 text-xs text-ink-4">共 {{ results.length }} 部作品</p>
       <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-        <AnimeCard v-for="it in results" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
+        <AnimeCard v-for="it in results" :key="`${it.primary.sourceId}:${it.primary.animeId}`" :item="it.primary" :source-ids="it.sourceIds" />
       </div>
     </template>
   </div>

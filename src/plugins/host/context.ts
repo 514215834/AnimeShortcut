@@ -11,7 +11,8 @@ export interface ContextOptions {
   }
 }
 
-const HOST_VERSION = '0.1.0'
+/** 宿主版本（注入插件 env.hostVersion；Worker 桥复用） */
+export const HOST_VERSION = '0.1.0'
 
 export function createPluginContext(
   manifestRef: { current: PluginManifest | null },
@@ -78,21 +79,36 @@ export function createPluginContext(
     },
   }
 
+  /** DOMParser 可用性（Worker 沙箱/node 下为 undefined，规范 §6 domDocument 语义） */
+  const hasDom = typeof DOMParser !== 'undefined'
+
   const nsKey = (key: string) => `plugin:${pluginId()}:${key}`
 
   return {
-    env: { hostVersion: HOST_VERSION, specVersion: '1.0', locale: 'zh-CN', timezone: 'Asia/Shanghai' },
+    env: {
+      hostVersion: HOST_VERSION,
+      specVersion: '1.0',
+      locale: 'zh-CN',
+      timezone: 'Asia/Shanghai',
+      mode: import.meta.env.DEV ? 'dev' : 'production',
+    },
     http,
     dom: {
       async query(html, selector, o) {
+        if (!hasDom) throw new PluginError('UNSUPPORTED', 'dom.query 需要宿主提供 DOMParser（main 沙箱）')
         const doc = new DOMParser().parseFromString(html, 'text/html')
         const els = Array.from(doc.querySelectorAll(selector))
-        const pick = (el: Element): string | null =>
-          o?.attr ? el.getAttribute(o.attr) : (el.textContent?.trim() ?? null)
+        // attr 除元素属性外支持特殊值 outerHTML / innerHTML（规范 §6），用于分块二次解析
+        const pick = (el: Element): string | null => {
+          if (!o?.attr) return el.textContent?.trim() ?? null
+          if (o.attr === 'outerHTML') return el.outerHTML
+          if (o.attr === 'innerHTML') return el.innerHTML
+          return el.getAttribute(o.attr)
+        }
         return o?.all ? els.map(pick) : els.length > 0 ? pick(els[0]) : null
       },
     },
-    domDocument: { parse: (html) => new DOMParser().parseFromString(html, 'text/html') },
+    domDocument: hasDom ? { parse: (html) => new DOMParser().parseFromString(html, 'text/html') } : undefined,
     storage: {
       get: async <T>(key: string) => readJson<T>(nsKey(key)),
       set: async (key, value) => writeJson(nsKey(key), value),
@@ -114,9 +130,17 @@ export function createPluginContext(
         }
       },
       decodeEntities(text) {
-        const el = document.createElement('textarea')
-        el.innerHTML = text
-        return el.value
+        // 命名/十进制/十六进制实体的轻量解码；无 DOM 环境也可用
+        if (typeof document !== 'undefined') {
+          const el = document.createElement('textarea')
+          el.innerHTML = text
+          return el.value
+        }
+        const NAMED: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+        return text
+          .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+          .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+          .replace(/&(amp|lt|gt|quot|apos|nbsp);/g, (_, n: string) => NAMED[n] ?? _)
       },
       hashId(input) {
         let h = 5381

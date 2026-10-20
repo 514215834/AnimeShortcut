@@ -1,4 +1,4 @@
-import { PluginError, type AnimeDetail, type AnimeSummary, type Episode, type PlayResult } from '../../host/types'
+import { PluginError, type AnimeDetail, type AnimeSummary, type Episode } from '../../host/types'
 
 // ========= agedm 原始响应结构（字段依据 docs/探测报告-agedm.md 实测）=========
 
@@ -67,6 +67,10 @@ export interface AgedmDetailResponse {
     playlists?: Record<string, Array<[string, string]>>
   }
   player_label_arr?: Record<string, string>
+  /** 解析器前缀（探测报告 §5）：zj=普通线路，vip=VIP 线路 */
+  player_jx?: { vip?: string; zj?: string }
+  /** VIP 线路代码逗号串（如 "xigua,jrs"），命中时用 player_jx.vip 前缀 */
+  player_vip?: string
 }
 
 export const SITE_URL = 'https://m.agedm.io'
@@ -178,9 +182,14 @@ export function toDetail(resp: AgedmDetailResponse): AnimeDetail {
   }
 }
 
-/** resolvePlay：MVP 返回源站播放页跳转（流地址解析在迭代 3） */
-export function playResult(animeId: string, episodeId: string): PlayResult {
-  const m = /^(\d+):(\d+)$/.exec(episodeId)
-  if (!m) throw new PluginError('PARSE', `非法的剧集标识: ${episodeId}`)
-  return { type: 'page', url: playPageUrl(animeId, Number(m[1]), Number(m[2])) }
+/** 站方解析器页面里的流地址变量（实测形态：var Vurl = 'https://…/index.m3u8'） */
+const VURL_RE = /var\s+Vurl\s*=\s*'([^']*)'/
+
+/**
+ * 从解析器 HTML 提取直连流地址；取不到或非 https URL（如加密线路的 zkzk_ 串）
+ * 返回 undefined，由调用方回落「跳转源站播放」。
+ */
+export function extractStreamVurl(parserHtml: string): string | undefined {
+  const v = VURL_RE.exec(parserHtml)?.[1]?.trim()
+  return v && /^https:\/\//i.test(v) ? v : undefined
 }

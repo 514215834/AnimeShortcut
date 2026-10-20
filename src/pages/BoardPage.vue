@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, useTemplateRef, watch } from 'vue'
 import { useBoardStore } from '../stores/board'
-import { useSettingsStore } from '../stores/settings'
 import { useUpdateStore } from '../stores/update'
 import { useInfiniteScroll } from '../composables/useInfiniteScroll'
 import AnimeCard from '../components/AnimeCard.vue'
@@ -10,7 +9,6 @@ import ErrorState from '../components/ErrorState.vue'
 import EmptyState from '../components/EmptyState.vue'
 
 const board = useBoardStore()
-const settings = useSettingsStore()
 const updateStore = useUpdateStore()
 
 const sentinel = useTemplateRef<HTMLElement | null>('sentinel')
@@ -50,15 +48,6 @@ watch(
 
 onMounted(() => ensureViewData())
 
-// 代理地址/数据源启停在设置页变更后，自动重新拉取两个视图
-watch(
-  () => settings.configRev,
-  () => {
-    board.resetLatest()
-    void board.loadWeekly()
-    void board.loadMoreLatest()
-  },
-)
 </script>
 
 <template>
@@ -144,7 +133,7 @@ watch(
       <EmptyState v-if="currentList.length === 0" text="这一天暂无更新记录" />
       <!-- 周更卡片网格（封面按番剧 ID 构造，加载失败自动回退占位） -->
       <div v-else class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-        <AnimeCard v-for="it in currentList" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
+        <AnimeCard v-for="it in currentList" :key="`${it.primary.sourceId}:${it.primary.animeId}`" :item="it.primary" :source-ids="it.sourceIds" />
       </div>
     </template>
   </section>
@@ -166,7 +155,7 @@ watch(
     <EmptyState v-else-if="board.latestEmpty" text="没有拉到更新数据" hint="请检查代理设置" />
     <template v-else>
       <div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-        <AnimeCard v-for="it in board.latest" :key="`${it.sourceId}:${it.animeId}`" :item="it" />
+        <AnimeCard v-for="it in board.latest" :key="`${it.primary.sourceId}:${it.primary.animeId}`" :item="it.primary" :source-ids="it.sourceIds" />
       </div>
       <div ref="sentinel" class="py-8 text-center text-xs text-ink-4">
         <template v-if="board.latestLoading">

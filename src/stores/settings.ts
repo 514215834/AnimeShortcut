@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { readJson, writeJson } from '../core/storage/localStore'
 import { setWorkerUrl } from '../core/http/proxyChain'
+import { listSources } from '../plugins/host/host'
 import { applyTheme, type ThemeMode } from '../theme'
 export interface Settings {
   schemaVersion: number
@@ -10,14 +11,16 @@ export interface Settings {
   /** 更新检测抓取间隔（分钟） */
   fetchIntervalMin: number
   notificationsEnabled: boolean
-  /** 启用的数据源插件 id */
-  enabledSources: string[]
+  /** 启用的数据源插件 id；null = 未初始化（默认全部启用，首次开关时物化为显式列表） */
+  enabledSources: string[] | null
   /** 主题色预设 id（src/theme.ts ACCENT_PRESETS） */
   accent: string
   /** 明暗模式 */
   themeMode: ThemeMode
   /** 背景光斑开 */
   bgGlow: boolean
+  /** 远程插件导入入口（默认关闭，规范 §11：默认不开启外置插件入口） */
+  enableRemotePlugins: boolean
 }
 
 const KEY = 'settings'
@@ -26,10 +29,11 @@ const DEFAULTS: Settings = {
   proxyWorkerUrl: '',
   fetchIntervalMin: 30,
   notificationsEnabled: true,
-  enabledSources: ['agedm'],
+  enabledSources: null,
   accent: 'indigo',
   themeMode: 'light',
   bgGlow: true,
+  enableRemotePlugins: false,
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -38,8 +42,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const configRev = ref(0)
 
   function migrate(raw: Settings | null): Settings {
+    // 默认值逐字段并入；enabledSources 保留 null 语义（新用户/新装插件默认全启用）
     const merged = { ...DEFAULTS, ...(raw ?? {}) } as Settings
-    if (!Array.isArray(merged.enabledSources)) merged.enabledSources = [...DEFAULTS.enabledSources]
+    if (raw !== null && !Array.isArray(merged.enabledSources)) merged.enabledSources = null
     return merged
   }
 
@@ -70,7 +75,8 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function setSourceEnabled(id: string, on: boolean): void {
-    const set = new Set(settings.value.enabledSources)
+    // 首次开关：以「当前注册表全量」物化为显式列表（与 null 语义一致），再做增删
+    const set = new Set(settings.value.enabledSources ?? listSources().map((s) => s.id))
     if (on) set.add(id)
     else set.delete(id)
     settings.value.enabledSources = Array.from(set)
@@ -79,7 +85,13 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function isSourceEnabled(id: string): boolean {
-    return settings.value.enabledSources.includes(id)
+    const list = settings.value.enabledSources
+    return list === null ? true : list.includes(id)
+  }
+
+  function setRemotePluginsEnabled(on: boolean): void {
+    settings.value.enableRemotePlugins = on
+    save()
   }
 
   function setAccent(id: string): void {
@@ -119,5 +131,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setNotificationsEnabled,
     setSourceEnabled,
     isSourceEnabled,
+    setRemotePluginsEnabled,
   }
 })

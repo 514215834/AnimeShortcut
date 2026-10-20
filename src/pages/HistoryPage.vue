@@ -21,7 +21,9 @@ function fmtTime(ts: number): string {
 }
 
 function openEntry(e: HistoryEntry): void {
-  if (e.playPageUrl) window.open(e.playPageUrl, '_blank', 'noopener')
+  // 站内播放页接管；无剧集 id 的旧记录退回源站播放页
+  if (e.episodeId) window.location.hash = `/play/${e.sourceId}/${e.animeId}/${e.episodeId}`
+  else if (e.playPageUrl) window.open(e.playPageUrl, '_blank', 'noopener')
 }
 
 function requestClear(): void {

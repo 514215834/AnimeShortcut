@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import type { AnimeSummary } from '../plugins/host/types'
 
-defineProps<{ item: AnimeSummary }>()
+defineProps<{ item: AnimeSummary; /** 归并后的来源列表（多源同名时 >1，展示徽标） */ sourceIds?: string[] }>()
 
 const imgFailed = ref(false)
 
@@ -36,8 +36,17 @@ function go(it: AnimeSummary): void {
       >
         {{ item.latestEpisodeTitle }}
       </span>
+      <span
+        v-if="sourceIds && sourceIds.length > 1"
+        class="absolute right-1.5 top-1.5 rounded-full bg-accent-600/90 px-1.5 py-0.5 text-[10px] text-white shadow-sm backdrop-blur-sm"
+        :title="`共 ${sourceIds.length} 个来源`"
+      >
+        {{ sourceIds.length }}源
+      </span>
     </div>
     <p class="mt-2 line-clamp-2 text-[13px] leading-snug text-ink">{{ item.title }}</p>
-    <p class="mt-0.5 pb-0.5 text-[11px] text-ink-4">{{ item.sourceId }}</p>
+    <p class="mt-0.5 pb-0.5 truncate text-[11px] text-ink-4">
+      {{ sourceIds && sourceIds.length > 1 ? sourceIds.join(' · ') : item.sourceId }}
+    </p>
   </button>
 </template>

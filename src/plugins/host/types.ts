@@ -149,6 +149,8 @@ export interface PluginEnv {
   specVersion: '1.0'
   locale: string
   timezone: string
+  /** 宿主运行形态：插件可据此选择开发联调通道（如同源相对路径），生产必须走白名单域名 */
+  mode: 'dev' | 'production'
 }
 
 export interface PluginContext {
@@ -189,6 +191,33 @@ export interface PluginContext {
 export type PluginFactory = (
   host: PluginContext,
 ) => AnimeSourcePlugin | Promise<AnimeSourcePlugin>
+
+// ========= 插件包与沙箱（docs/插件导入导出与热插拔设计.md §3/§5）=========
+
+/** 插件包：导入/导出/持久化的统一载体，单文件 JSON（.asplugin.json） */
+export interface PluginPackage {
+  formatVersion: 1
+  manifest: PluginManifest
+  /** esbuild/rolldown IIFE 自包含 bundle 文本；工厂函数按规范 §5.1 挂 self.__AS_PLUGIN__ */
+  code: string
+}
+
+/** 已安装插件的持久化记录（IndexedDB: plugins，keyPath: key = manifest.id） */
+export interface InstalledPluginRecord {
+  key: string
+  manifest: PluginManifest
+  code: string
+  installedAt: number
+  origin: 'file' | 'url'
+  sourceUrl?: string
+}
+
+/** 沙箱句柄：宿主对插件实例的统一调用面（builtin 本地直载与 worker 桥共用） */
+export interface SandboxHandle {
+  /** 方法名与规范 §5.1 接口一致，含 init / onUnload 生命周期 */
+  call(method: string, args: unknown[]): Promise<unknown>
+  destroy(): void
+}
 
 export interface AnimeSourcePlugin {
   readonly manifest: PluginManifest

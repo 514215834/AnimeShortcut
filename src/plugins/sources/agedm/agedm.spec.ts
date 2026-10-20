@@ -8,6 +8,11 @@ import searchP1 from './__fixtures__/search-juzhu-p1.json'
 import detail20260293 from './__fixtures__/detail-20260293.json'
 import catalogP1 from './__fixtures__/catalog-all-p1-size12.json'
 import rankAll from './__fixtures__/rank-year-all.json'
+import parserFfm3u8 from './__fixtures__/play-parser-ffm3u8.html?raw'
+import parserXigua from './__fixtures__/play-parser-xigua.html?raw'
+
+const PARSER_ZJ = 'https://jx.wuzhoupai.com:8443/m3u8/?url='
+const PARSER_VIP = 'https://jx.wuzhoupai.com:8443/vip/?url='
 
 function fakeRoute(url: string): unknown {
   if (url.includes('home-list')) return homeList
@@ -19,10 +24,23 @@ function fakeRoute(url: string): unknown {
   throw new Error(`夹具未覆盖的 URL: ${url}`)
 }
 
-async function makePlugin() {
+function fakeTextRoute(url: string): string {
+  // VIP 线路（xigua 等，见 player_vip）走 vip 前缀，返回非流地址（zkzk 串）
+  if (url.startsWith(PARSER_VIP)) return parserXigua
+  if (url.startsWith(PARSER_ZJ)) return parserFfm3u8
+  throw new Error(`夹具未覆盖的文本 URL: ${url}`)
+}
+
+async function makePlugin(textFail = false) {
   const manifestRef = { current: null as PluginManifest | null }
   const ctx = createPluginContext(manifestRef, {
-    transport: { fetchJson: async <T,>(url: string) => fakeRoute(url) as T },
+    transport: {
+      fetchJson: async <T,>(url: string) => fakeRoute(url) as T,
+      fetchText: async (url: string) => {
+        if (textFail) throw new Error('网络错误（direct）')
+        return fakeTextRoute(url)
+      },
+    },
   })
   const factory = createAgedmPlugin()
   const plugin = await factory(ctx)
@@ -72,8 +90,25 @@ describe('agedm 插件（夹具回放）', () => {
     expect(d.episodes.every((e) => e.line)).toBe(true)
   })
 
-  it('resolvePlay：episodeId l:e → 1-based 播放页', async () => {
+  it('resolvePlay：普通线路解析出直连 m3u8（stream）', async () => {
     const p = await makePlugin()
+    // 线路序号 1 = ffm3u8（playlists 键序第 2 个），走 zj 解析器
+    const r = await p.resolvePlay!('20260293', '1:0')
+    expect(r.type).toBe('stream')
+    expect(r.url).toBe('https://vip.ffzy-plays.com/20261005/59106_9a4e19be/index.m3u8')
+    expect(r.referer).toBe('https://m.agedm.io')
+  })
+
+  it('resolvePlay：VIP 线路非流地址（zkzk 串）回落跳转源站', async () => {
+    const p = await makePlugin()
+    // 线路序号 0 = xigua（player_vip 含 xigua → vip 前缀），Vurl 非 URL
+    const r = await p.resolvePlay!('20260293', '0:0')
+    expect(r.type).toBe('page')
+    expect(r.url).toBe('https://m.agedm.io/#/play/20260293/1/1')
+  })
+
+  it('resolvePlay：解析器请求失败时回落跳转源站（不抛错）', async () => {
+    const p = await makePlugin(true)
     const r = await p.resolvePlay!('20260293', '1:0')
     expect(r.type).toBe('page')
     expect(r.url).toBe('https://m.agedm.io/#/play/20260293/2/1')

@@ -38,3 +38,19 @@ export function keysWithPrefix(prefix: string): string[] {
   }
   return out
 }
+
+/** 删除所有 `asc:<prefix>` 开头的键，返回删除数（插件卸载时的私有 KV / 缓存回收用） */
+export function removeKeysWithPrefix(prefix: string): number {
+  const target = PREFIX + prefix
+  const hits: string[] = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(target)) hits.push(k)
+    }
+    for (const k of hits) localStorage.removeItem(k)
+  } catch {
+    /* 忽略 */
+  }
+  return hits.length
+}

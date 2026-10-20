@@ -4,8 +4,8 @@
  */
 
 const DB_NAME = 'animeshortcut'
-const DB_VERSION = 1
-export const STORES = ['subscriptions', 'history'] as const
+const DB_VERSION = 2
+export const STORES = ['subscriptions', 'history', 'plugins'] as const
 export type StoreName = (typeof STORES)[number]
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
@@ -27,6 +27,10 @@ function openDb(): Promise<IDBDatabase | null> {
         if (!db.objectStoreNames.contains('history')) {
           db.createObjectStore('history', { keyPath: 'key' })
         }
+        // v2：已安装的外置插件包（manifest + code）
+        if (!db.objectStoreNames.contains('plugins')) {
+          db.createObjectStore('plugins', { keyPath: 'key' })
+        }
       }
       req.onsuccess = () => resolve(req.result)
       req.onerror = () => resolve(null)
@@ -40,8 +44,8 @@ function openDb(): Promise<IDBDatabase | null> {
 // 内存回退
 const memStores = new Map<string, Map<string, unknown>>()
 
-function memStore(name: StoreName): Map<string, unknown> {
-  let m = memStores.get(name)
+function memStore(name: StoreName): Map<string, { key: string }> {
+  let m = memStores.get(name) as Map<string, { key: string }> | undefined
   if (!m) {
     m = new Map()
     memStores.set(name, m)
@@ -64,7 +68,7 @@ export async function idbGet<T>(store: StoreName, key: string): Promise<T | null
   return (v as T | undefined) ?? null
 }
 
-export async function idbPut(store: StoreName, value: { key: string }): Promise<void> {
+export async function idbPut<T extends { key: string }>(store: StoreName, value: T): Promise<void> {
   const db = await openDb()
   if (!db) {
     memStore(store).set(value.key, value)
@@ -89,4 +93,14 @@ export async function idbAll<T>(store: StoreName): Promise<T[]> {
   if (!db) return Array.from(memStore(store).values()) as T[]
   const tx = db.transaction(store, 'readonly')
   return (await reqAsPromise(tx.objectStore(store).getAll())) as T[]
+}
+
+export async function idbClear(store: StoreName): Promise<void> {
+  const db = await openDb()
+  if (!db) {
+    memStore(store).clear()
+    return
+  }
+  const tx = db.transaction(store, 'readwrite')
+  await reqAsPromise(tx.objectStore(store).clear())
 }

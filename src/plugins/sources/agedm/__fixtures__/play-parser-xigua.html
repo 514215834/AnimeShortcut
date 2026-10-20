@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>视频播放</title>
+<!-- VIP 线路（xigua）实测形态：Vurl 为非 URL 的加密串，插件应回落「跳转源站播放」 -->
+</head>
+<body>
+	<script>
+		var Isios = navigator.userAgent.match(/iPad|iPhone|iPod/i) != null;
+		var Iswap = navigator.userAgent.match(/iPad|iPhone|Android|Linux|iPod|SymbianOS|Windows Phone/i) != null;
+		var Vurl = 'zkzk_v1014dg50001db135jvog65lllu6q3m0';
+		var Vurl_id = '26b1b94206dbd47086c9fe1a215d8f79';
+		var Autoplay = Iswap ? true : false;
+		var IsM3u8 = Vurl.toLowerCase().indexOf(".m3u8") > -1;
+		var VideoType = IsM3u8 ? 'm3u8' : 'mp4';
+	</script>
+</body>
+</html>

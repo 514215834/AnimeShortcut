@@ -1,4 +1,4 @@
-import { readJson, writeJson } from '../storage/localStore'
+import { readJson, removeKeysWithPrefix, writeJson } from '../storage/localStore'
 
 export interface CacheEntry<T> {
   data: T
@@ -42,4 +42,12 @@ export function cacheSet<T>(key: string, data: T, ttlMs: number): CacheEntry<T> 
 
 export function cacheClearAll(): void {
   mem.clear()
+}
+
+/** 按键前缀清除缓存（内存 + 本地）：插件卸载/重载时回收其方法级缓存 */
+export function cacheClearByPrefix(prefix: string): void {
+  for (const k of Array.from(mem.keys())) {
+    if (k.startsWith(prefix)) mem.delete(k)
+  }
+  removeKeysWithPrefix('cache:' + prefix)
 }

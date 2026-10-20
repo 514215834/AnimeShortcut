@@ -82,7 +82,12 @@
 1. 详情接口给出全部线路与剧集：`playlists[线路][集] = [集名, 加密token]`。
 2. 播放页（`/#/play/:id/:l/:e`）重新拉 detail，取第 `l` 条线路第 `e` 集的 token，拼出 iframe 地址：`player_jx.zj + token`（VIP 线路用 `vip` 前缀）→ 即 `https://jx.wuzhoupai.com:8443/m3u8/?url=<token>` 的第三方解析器。
 3. **站内播放可行性（迭代 3 探明项）**：请求解析器 URL 看响应是否直接是 m3u8，或返回含流地址的页面/302。~~l/e 的 0/1-based 语义需浏览器实测确认~~ **已确认（2026-10-18 浏览器实测）**：`/#/play/<AID>/<l>/<e>` 中 l/e 均为 **1-based**（l = 非空线路序号，e = 集序号）；源站代码三处自洽（初始化 `params.l-1`、取集 `n[e-1]`、历史写 `l+1`），并实测 `/play/20260293/1/1` 正确加载第 1 线路第 1 集的解析器 iframe。VIP 线路走 `player_jx.vip` 前缀。
-4. MVP 不依赖此链路：跳转 `/#/play/<AID>/<l>/<e>` 即可，由源站自己处理。
+4. **解析器流地址直取（2026-10-19 实测补充，站内播放已落地）**：GET `https://jx.wuzhoupai.com:8443/m3u8/?url=<token>`（响应 `ACAO: *`，浏览器可直连）返回 HTML 页，其中 `var Vurl = '...'` 即直连流地址：
+   - 普通线路为完整 **https m3u8 URL**：实测 `ffm3u8 → vip.ffzy-plays.com/…/index.m3u8`、`bfzym3u8 → fengbao13.com/…`、`wjm3u8 → v3.ppqrrs.com/…`、`lzm3u8 → v.lzcdn31.com/…`；
+   - VIP 线路（`player_vip` 列表，如 xigua）解析出非 URL 的加密串（`zkzk_…`），无法直取 → 回落跳转源站播放页；
+   - **流 CDN CORS**：非凡/暴风/无尽三线路的 master/子清单/分片实测均回 `Access-Control-Allow-Origin: *`（hls.js 可直连）；分片为同域相对路径。CDN 无 Referer 校验（curl 无 Referer 实测 200）。
+   - 插件实现：agedm v1.3.0 `resolvePlay` = detail（ttl 5min）→ 解析器（ttl 10min）→ `type:'stream'`；任一环节失败回落 `type:'page'`（解析器域名 `wuzhoupai.com` 已加入插件白名单与 Worker 白名单）。
+5. MVP 不依赖此链路：跳转 `/#/play/<AID>/<l>/<e>` 即可，由源站自己处理。
 
 ## 6. 其他实测要点
 

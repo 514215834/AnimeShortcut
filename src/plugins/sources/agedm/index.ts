@@ -10,9 +10,14 @@ import * as m from './mapping'
 import { manifest } from './manifest'
 
 const DEFAULT_API_BASE = 'https://api.agedm.io/v2/'
+/** 开发联调通道（规范 §6.1 开发例外）：Vite dev server 同源代理，见 vite.config.ts */
+const DEV_API_BASE = '/agedm-api/'
 const LATEST_PAGE_SIZE = 30
 const SEARCH_PAGE_SIZE = 24
 const CATALOG_PAGE_SIZE = 30
+/** resolvePlay 内部请求的 http 层缓存：详情 5 分钟、解析器结果 10 分钟（首播快、重复播放零请求） */
+const DETAIL_TTL_MS = 300_000
+const PARSER_TTL_MS = 600_000
 
 /** 分类筛选组（站点 UI 固定项；年份区间与源站一致：今年~2009） */
 function buildCatalogFilters(): CatalogFilterDef[] {
@@ -35,14 +40,16 @@ export function createAgedmPlugin(): PluginFactory {
     const api = (path: string) => base + path.replace(/^\//, '')
 
     return {
-      manifest,
-      async init(config) {
-        const v = config['apiBaseUrl']
-        base =
-          typeof v === 'string' && v.trim()
-            ? v.trim().replace(/\/+$/, '') + '/'
+    manifest,
+    async init(config) {
+      const v = config['apiBaseUrl']
+      base =
+        typeof v === 'string' && v.trim()
+          ? v.trim().replace(/\/+$/, '') + '/'
+          : host.env.mode === 'dev'
+            ? DEV_API_BASE
             : DEFAULT_API_BASE
-      },
+    },
       async getWeeklySchedule(page = 1) {
         // home-list 单页返回整周数据，按规范周更表不做分页
         if (page > 1) return { items: [], page, hasMore: false }
@@ -90,12 +97,18 @@ export function createAgedmPlugin(): PluginFactory {
       },
       async resolvePlay(animeId, episodeId) {
         const data = m.unwrap<AgedmDetailResponse>(
-          await host.http.getJson<unknown>(api(`detail/${encodeURIComponent(animeId)}`)),
+          await host.http.getJson<unknown>(api(`detail/${encodeURIComponent(animeId)}`), {
+            ttlMs: DETAIL_TTL_MS,
+          }),
           'detail',
         )
         const d = m.toDetail(data)
         const ep = d.episodes.find((e) => e.episodeId === episodeId)
         if (!ep?.playPageUrl) throw new PluginError('PARSE', `剧集不存在: ${animeId}:${episodeId}`)
+
+        const streamUrl = await resolveStreamUrl(host, data, episodeId)
+        if (streamUrl) return { type: 'stream', url: streamUrl, referer: m.SITE_URL }
+        // 解析失败/加密线路：回落跳转源站播放页（规范 §5.1 PlayResult.type='page'）
         return { type: 'page', url: ep.playPageUrl }
       },
       getCatalogMeta() {
@@ -137,5 +150,42 @@ export function createAgedmPlugin(): PluginFactory {
         }))
       },
     }
+  }
+}
+
+/** 规范 §5.1：默认导出工厂函数（打包分发与自动发现统一走默认导出） */
+export default createAgedmPlugin()
+
+/**
+ * 剧集 token → 站方解析器 → 直连 m3u8（探测报告 §5 实测链路）。
+ * 任一环节不满足（无 token/无解析器/解析失败/非流地址）返回 undefined，调用方回落跳转。
+ */
+async function resolveStreamUrl(
+  host: PluginContext,
+  data: AgedmDetailResponse,
+  episodeId: string,
+): Promise<string | undefined> {
+  const parsed = /^(\d+):(\d+)$/.exec(episodeId)
+  if (!parsed) return undefined
+  const li = Number(parsed[1])
+  const ei = Number(parsed[2])
+  // 与 mapping.toDetail 的线路过滤/排序保持一致，保证 lineIndex 对齐
+  const lines = Object.entries(data.video.playlists ?? {}).filter(
+    ([, eps]) => Array.isArray(eps) && eps.length > 0,
+  )
+  const token = lines[li]?.[1]?.[ei]?.[1]
+  const zj = data.player_jx?.zj
+  if (!token || !zj) return undefined
+  // VIP 线路走 vip 前缀（探测报告 §5）
+  const vipCodes = (data.player_vip ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  const prefix = vipCodes.includes(lines[li]?.[0] ?? '') ? (data.player_jx?.vip ?? zj) : zj
+  try {
+    const html = await host.http.getText(prefix + token, { ttlMs: PARSER_TTL_MS })
+    const vurl = m.extractStreamVurl(html)
+    if (!vurl) host.log.warn('解析器未返回流地址，回落跳转源站播放', episodeId)
+    return vurl
+  } catch (e) {
+    host.log.warn('流地址解析失败，回落跳转源站播放', e)
+    return undefined
   }
 }

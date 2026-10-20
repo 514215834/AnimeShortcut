@@ -1,23 +1,11 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { AnimeSummary } from '../plugins/host/types'
 import { listSources, sources } from '../plugins/host/host'
+import { mergeByTitle, type MergedCard } from '../services/merge'
 import { useSettingsStore } from './settings'
 
-export type WeeklyGroups = Partial<Record<number, AnimeSummary[]>> & { unset?: AnimeSummary[] }
-
-/** 多源合并：按复合键去重 + updateTime 降序 */
-function merge(items: AnimeSummary[]): AnimeSummary[] {
-  const seen = new Set<string>()
-  const out: AnimeSummary[] = []
-  for (const it of items) {
-    const key = `${it.sourceId}:${it.animeId}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(it)
-  }
-  return out.sort((a, b) => (b.updateTime ?? 0) - (a.updateTime ?? 0))
-}
+export type WeeklyGroups = Partial<Record<number, MergedCard[]>> & { unset?: MergedCard[] }
 
 function errMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -38,7 +26,7 @@ export const useBoardStore = defineStore('board', () => {
     weeklyLoading.value = true
     weeklyError.value = ''
     try {
-      const groups: WeeklyGroups = {}
+      const raw: Partial<Record<number | 'unset', AnimeSummary[]>> = {}
       const failures: string[] = []
       for (const src of listSources()) {
         if (!settings.isSourceEnabled(src.id)) continue
@@ -46,20 +34,18 @@ export const useBoardStore = defineStore('board', () => {
           const r = await sources.weekly(src.id)
           for (const it of r.items) {
             const wd = it.weekday
-            if (wd === undefined || wd < 0 || wd > 6) {
-              ;(groups.unset ??= []).push(it)
-            } else {
-              ;(groups[wd] ??= []).push(it)
-            }
+            const slot = wd === undefined || wd < 0 || wd > 6 ? 'unset' : wd
+            ;(raw[slot] ??= []).push(it)
           }
         } catch (e) {
           failures.push(`${src.name}: ${errMessage(e)}`)
         }
       }
-      for (const day of [0, 1, 2, 3, 4, 5, 6]) {
-        if (groups[day]?.length) groups[day] = merge(groups[day] ?? [])
+      const groups: WeeklyGroups = {}
+      for (const [slotKey, items] of Object.entries(raw)) {
+        if (!items?.length) continue
+        groups[slotKey === 'unset' ? 'unset' : Number(slotKey)] = mergeByTitle(items)
       }
-      if (groups.unset?.length) groups.unset = merge(groups.unset)
       weekly.value = groups
       weeklyError.value = failures.join('；')
     } finally {
@@ -68,7 +54,7 @@ export const useBoardStore = defineStore('board', () => {
   }
 
   // ========= 最新更新流 =========
-  const latest = ref<AnimeSummary[]>([])
+  const latest = ref<MergedCard[]>([])
   const latestPage = ref(0)
   const latestHasMore = ref(true)
   const latestLoading = ref(false)
@@ -93,7 +79,8 @@ export const useBoardStore = defineStore('board', () => {
           failures.push(`${src.name}: ${errMessage(e)}`)
         }
       }
-      latest.value = merge(latest.value.concat(collected))
+      // 归并去重（跨源同名 + 同源复合键重复），保留新页与旧页的全量
+      latest.value = mergeByTitle([...latest.value.map((c) => c.primary), ...collected])
       latestPage.value = page
       latestHasMore.value = anyMore
       if (failures.length > 0 && collected.length === 0) latestError.value = failures.join('；')
@@ -113,6 +100,17 @@ export const useBoardStore = defineStore('board', () => {
     latestHasMore.value = true
     latestError.value = ''
   }
+
+  // 配置（代理地址/数据源启停/插件装卸）变更后全局重拉——
+  // 放在 store 而非页面：用户在设置页改动后，看板数据立即剔除/纳入对应源（3-1 验收语义）
+  watch(
+    () => settings.configRev,
+    () => {
+      resetLatest()
+      void loadWeekly()
+      void loadMoreLatest()
+    },
+  )
 
   return {
     weekly,

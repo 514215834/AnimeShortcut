@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { AnimeDetail, Episode } from '../plugins/host/types'
-import { sources } from '../plugins/host/host'
+import { listSources, sources } from '../plugins/host/host'
 import { useSubscriptionStore } from '../stores/subscription'
-import { useHistoryStore } from '../stores/history'
 import { useUpdateStore } from '../stores/update'
+import { useSettingsStore } from '../stores/settings'
+import { normalizeTitle } from '../services/merge'
 import { primaryLatest } from '../services/diff'
 
 const route = useRoute()
+const router = useRouter()
+const settings = useSettingsStore()
 const sourceId = computed(() => String(route.params.sourceId ?? ''))
 const animeId = computed(() => String(route.params.animeId ?? ''))
 
@@ -19,7 +22,6 @@ const showFullDesc = ref(false)
 const activeLine = ref(0)
 
 const subStore = useSubscriptionStore()
-const historyStore = useHistoryStore()
 const updateStore = useUpdateStore()
 
 const subscribed = computed(() => subStore.isSubscribed(sourceId.value, animeId.value))
@@ -74,6 +76,12 @@ const statusLabel = computed(() => {
   return map[detail.value?.status ?? 'unknown'] ?? ''
 })
 
+/** 当前来源展示名（清单名，取不到回退 id） */
+const sourceName = computed(() => {
+  const sid = detail.value?.sourceId
+  return listSources().find((s) => s.id === sid)?.name ?? sid ?? ''
+})
+
 async function toggleSubscribe(): Promise<void> {
   if (!detail.value) return
   if (subscribed.value) {
@@ -83,20 +91,60 @@ async function toggleSubscribe(): Promise<void> {
   }
 }
 
-function openPlay(ep: Episode): void {
-  if (!ep.playPageUrl || !detail.value) return
-  if (detail.value.sourceId) {
-    void historyStore.record({
-      sourceId: detail.value.sourceId,
-      animeId: detail.value.animeId,
-      episodeId: ep.episodeId,
-      title: detail.value.title,
-      episodeTitle: ep.title,
-      cover: detail.value.cover,
-      playPageUrl: ep.playPageUrl,
-    })
+// ========= 换源查看（迭代 3-3）：按标题在其它已启用源中找同名番 =========
+interface AltMatch {
+  sourceId: string
+  sourceName: string
+  animeId: string
+  title: string
+  cover?: string
+}
+const altOpen = ref(false)
+const altLoading = ref(false)
+const altMatches = ref<AltMatch[]>([])
+const altMsg = ref('')
+
+async function findAltSources(): Promise<void> {
+  if (!detail.value?.title || altLoading.value) return
+  altOpen.value = true
+  altLoading.value = true
+  altMsg.value = ''
+  altMatches.value = []
+  const wanted = normalizeTitle(detail.value.title)
+  try {
+    for (const src of listSources()) {
+      if (src.id === sourceId.value || !settings.isSourceEnabled(src.id)) continue
+      try {
+        const r = await sources.search(src.id, detail.value.title, 1)
+        for (const it of r.items) {
+          if (normalizeTitle(it.title) === wanted && !altMatches.value.some((m) => m.sourceId === src.id)) {
+            altMatches.value.push({
+              sourceId: src.id,
+              sourceName: src.name,
+              animeId: it.animeId,
+              title: it.title,
+              cover: it.cover,
+            })
+          }
+        }
+      } catch {
+        /* 单源失败不阻塞换源查找 */
+      }
+    }
+    if (altMatches.value.length === 0) altMsg.value = '其它已启用的数据源暂无同名番剧'
+  } finally {
+    altLoading.value = false
   }
-  window.open(ep.playPageUrl, '_blank', 'noopener')
+}
+
+function goAlt(m: AltMatch): void {
+  void router.push(`/anime/${m.sourceId}/${m.animeId}`)
+}
+
+function openPlay(ep: Episode): void {
+  if (!detail.value) return
+  // 站内播放页（迭代 3-4）：由播放页解析流地址，取不到时再回落跳源站
+  void router.push(`/play/${detail.value.sourceId}/${detail.value.animeId}/${ep.episodeId}`)
 }
 </script>
 
@@ -205,6 +253,50 @@ function openPlay(ep: Episode): void {
       </button>
     </div>
 
+    <!-- 来源与换源查看（迭代 3-3） -->
+    <div class="mt-4 rounded-2xl border border-line bg-white/50 dark:bg-white/5 p-4 backdrop-blur">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-xs font-semibold tracking-wide text-ink-4">
+          数据来源：{{ sourceName }}
+        </h3>
+        <button
+          type="button"
+          class="rounded-full border border-line-2 bg-surface-3 px-3 py-1 text-[11px] text-ink-2 transition hover:bg-surface-2 hover:text-accent-600"
+          :disabled="altLoading"
+          @click="void findAltSources()"
+        >
+          {{ altLoading ? '查找中…' : '🔄 换源查看' }}
+        </button>
+      </div>
+      <template v-if="altOpen">
+        <p v-if="altLoading" class="mt-2.5 text-xs text-ink-4">正在其它数据源中查找同名番剧…</p>
+        <p v-else-if="altMsg" class="mt-2.5 text-xs text-ink-4">{{ altMsg }}</p>
+        <ul v-else-if="altMatches.length > 0" class="mt-2.5 space-y-1.5">
+          <li v-for="m in altMatches" :key="`${m.sourceId}:${m.animeId}`">
+            <button
+              type="button"
+              class="flex w-full items-center gap-2.5 rounded-xl border border-line-2 bg-surface-3 px-3 py-2 text-left transition hover:border-accent-300 hover:bg-accent-50/70"
+              @click="goAlt(m)"
+            >
+              <img
+                v-if="m.cover"
+                :src="m.cover"
+                :alt="m.title"
+                referrerpolicy="no-referrer"
+                loading="lazy"
+                class="h-10 w-7 rounded object-cover"
+              />
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[13px] text-ink">{{ m.title }}</span>
+                <span class="block text-[11px] text-ink-4">{{ m.sourceName }}（{{ m.sourceId }}）</span>
+              </span>
+              <span class="shrink-0 text-[11px] text-accent-500">切换 →</span>
+            </button>
+          </li>
+        </ul>
+      </template>
+    </div>
+
     <!-- 剧集 -->
     <section v-if="lines.length > 0" class="mt-6">
       <div class="mb-3 flex items-baseline justify-between">
@@ -246,7 +338,7 @@ function openPlay(ep: Episode): void {
         </button>
       </div>
       <p class="mt-3 text-[11px] text-ink-4">
-        点击剧集将在新窗口打开源站播放页（{{ detail.sourceId }}）
+        点击剧集将站内播放（取不到流地址时自动跳转源站，{{ detail.sourceId }}）
       </p>
     </section>
     <EmptyState v-else text="暂无剧集数据" class="mt-6" />
