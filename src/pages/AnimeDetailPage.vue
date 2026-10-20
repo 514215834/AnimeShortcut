@@ -8,6 +8,8 @@ import { useUpdateStore } from '../stores/update'
 import { useSettingsStore } from '../stores/settings'
 import { normalizeTitle } from '../services/merge'
 import { primaryLatest } from '../services/diff'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

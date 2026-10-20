@@ -130,6 +130,21 @@ describe('installPlugin', () => {
     await initPluginHost({ factories: [] })
     expect(listSources().map((s) => s.id)).toContain('example')
   })
+
+  it('启动恢复不探活：不发起能力调用，网络不可用也不丢插件', async () => {
+    // 探活是一次实时网络调用（走代理链）；恢复期执行会阻塞首屏（设计 §7 恢复只验 sha256 + init）。
+    // 用例：安装成功后撤销能力实现（模拟恢复时网络失败），重启后插件必须仍然注册成功。
+    sbx.impl['getLatestUpdates'] = () => ({ items: [], page: 1, hasMore: false })
+    await installPlugin(pkg(manifest({})))
+    let calls = 0
+    sbx.impl['getLatestUpdates'] = () => {
+      calls += 1
+      throw new PluginError('NETWORK', '恢复期不应被调用')
+    }
+    await initPluginHost({ factories: [] })
+    expect(listSources().map((s) => s.id)).toContain('example')
+    expect(calls).toBe(0)
+  })
 })
 
 describe('uninstallPlugin', () => {

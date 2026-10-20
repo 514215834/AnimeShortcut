@@ -86,7 +86,7 @@ export function createYinhuadmPlugin(): PluginFactory {
         )
         const v = env.list[0]
         if (!v) throw new PluginError('PARSE', `番剧不存在: ${animeId}`)
-        return m.toDetail(v, decode)
+        return await m.toDetail(v, decode)
       },
       // vod_play_url 直出 m3u8（探测报告 §2.1），单请求完成流解析；缺集/无直链回落跳转
       async resolvePlay(animeId, episodeId): Promise<PlayResult> {

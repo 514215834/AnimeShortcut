@@ -137,6 +137,29 @@ describe('yinhuadm 插件（夹具回放）', () => {
     await expect(p.resolvePlay!('29515', 'abc')).rejects.toThrow(PluginError)
   })
 
+  it('getDetail：decodeEntities 为异步（Worker RPC 形态）时简介仍正确解析', async () => {
+    // Worker 沙箱下 ctx.utils.decodeEntities 经 postMessage 桥接返回 Promise（规范 §10），
+    // 插件必须 await —— 回归：同步误用会以 "s.replace is not a function" 炸掉整个 getDetail
+    const manifestRef = { current: null as PluginManifest | null }
+    const ctx = createPluginContext(manifestRef, {
+      transport: {
+        fetchJson: async <T,>(url: string) => fakeRoute(url) as T,
+        fetchText: async () => weekHtml,
+      },
+    })
+    const factory = createYinhuadmPlugin()
+    // Worker 沙箱下 decodeEntities 实际返回 Promise，但宿主类型声明为同步（规范 §6）——
+    // 此处按运行时实态模拟并 cast，插件侧必须 await 兼容两种形态
+    const asyncDecode = (s: string): string => Promise.resolve(ctx.utils.decodeEntities(s)) as unknown as string
+    const plugin = await factory({ ...ctx, utils: { ...ctx.utils, decodeEntities: asyncDecode } })
+    manifestRef.current = plugin.manifest
+    await plugin.init({})
+    const d = await plugin.getDetail!('29515')
+    expect(d.description).toBeTruthy()
+    expect(d.description).not.toMatch(/<[^>]+>/)
+    expect(d.episodes).toHaveLength(9)
+  })
+
   it('getDetail：接口返回空列表（无效 id）抛 PARSE', async () => {
     const manifestRef = { current: null as PluginManifest | null }
     const ctx = createPluginContext(manifestRef, {

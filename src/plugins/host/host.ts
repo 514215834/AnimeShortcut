@@ -157,10 +157,12 @@ async function mountBuiltinFactory(factory: PluginFactory): Promise<void> {
 /**
  * 导入包装载全流程（设计 §6）：校验 → 完整性 → 新沙箱 init + 探活 → 换装 → 持久化。
  * 新沙箱全部通过后才替换旧实例：更新/安装失败时已装插件原地不动，不留半装状态。
+ * probe 仅安装/重载时执行（规范 §11 信任流程）；启动恢复必须传 false——
+ * 探活是一次绕过缓存的实时网络调用，恢复期执行会阻塞首屏且让可用性随网络波动（设计 §7 只要求 sha256 复核）。
  */
 async function mountPackage(
   pkg: PluginPackage,
-  opts: { origin: 'file' | 'url'; sourceUrl?: string; persist: boolean },
+  opts: { origin: 'file' | 'url'; sourceUrl?: string; persist: boolean; probe?: boolean },
 ): Promise<SourceInfo> {
   const check = validateImportedManifest(pkg.manifest)
   if (!check.ok) {
@@ -173,8 +175,10 @@ async function mountPackage(
   const handle = await startSandbox({ code: pkg.code, manifest })
   try {
     await handle.call('init', [configProvider(id)])
-    const probe = manifest.capabilities.map((c) => PROBE_CALLS[c]).find(Boolean)
-    if (probe) await handle.call(probe.method, probe.args)
+    if (opts.probe ?? true) {
+      const probe = manifest.capabilities.map((c) => PROBE_CALLS[c]).find(Boolean)
+      if (probe) await handle.call(probe.method, probe.args)
+    }
   } catch (e) {
     handle.destroy()
     throw e instanceof PluginError
@@ -234,10 +238,11 @@ export async function initPluginHost(opts?: {
   }))
   for (const rec of records) {
     try {
-      // 恢复不重写 IDB（persist:false），保留原 installedAt/origin
+      // 恢复不重写 IDB（persist:false），保留原 installedAt/origin；不探活（probe:false）——恢复只做
+      // 清单/sha256 复核 + init，可用性由调用期错误态兜底，不因探活网络失败把已装插件整个跳过
       await mountPackage(
         { formatVersion: 1, manifest: rec.manifest, code: rec.code },
-        { origin: rec.origin, sourceUrl: rec.sourceUrl, persist: false },
+        { origin: rec.origin, sourceUrl: rec.sourceUrl, persist: false, probe: false },
       )
     } catch (e) {
       console.warn(`[PluginHost] 插件 ${rec.key} 恢复失败，已跳过`, e)

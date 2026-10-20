@@ -4,7 +4,7 @@ export const manifest: PluginManifest = {
   manifestVersion: '1.0',
   id: 'yinhuadm',
   name: '樱花动漫',
-  version: '1.0.0',
+  version: '1.0.1',
   siteUrl: 'https://www.yinhuadm.cc',
   // 非内置：仅作为官方插件包分发；pack:plugins 产出时转为 remote 形态（Worker 沙箱）
   type: 'builtin',

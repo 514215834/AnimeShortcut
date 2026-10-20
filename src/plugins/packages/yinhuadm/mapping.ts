@@ -139,15 +139,14 @@ export function episodesOf(v: MacVod): Episode[] {
   return episodes
 }
 
-export function toDetail(v: MacVod, decodeEntities: (s: string) => string): AnimeDetail {
+/** 详情映射。decodeEntities 允许返回 Promise：Worker 沙箱下 utils.decodeEntities 是异步 RPC（规范 §10），main 沙箱为同步字符串 */
+export async function toDetail(v: MacVod, decodeEntities: (s: string) => string | Promise<string>): Promise<AnimeDetail> {
+  const rawContent = await decodeEntities(v.vod_content ?? '')
   return {
     animeId: String(v.vod_id),
     title: v.vod_name,
     cover: absCover(v.vod_pic),
-    description: (() => {
-      const s = stripHtml(decodeEntities(v.vod_content ?? ''))
-      return s || undefined
-    })(),
+    description: stripHtml(rawContent) || undefined,
     region: [v.vod_area, v.vod_year ? String(v.vod_year) : ''].filter(Boolean).join(' / ') || undefined,
     genres: (v.vod_class ?? '').split(',').map((s) => s.trim()).filter(Boolean),
     status: statusOf(v),
