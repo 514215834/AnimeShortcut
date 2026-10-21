@@ -24,5 +24,9 @@ describe('devPrompt（设置页开发者支持）', () => {
     for (const key of ['capabilities', 'permissions.domains', 'hasMore', 'decodeEntities', 'episodeId']) {
       expect(p).toContain(key)
     }
+    // 交付物约定：单文件 .asplugin.json（零构建可导入）
+    for (const key of ['.asplugin.json', 'formatVersion: 1', '__AS_PLUGIN__', 'sha256 必须缺省']) {
+      expect(p).toContain(key)
+    }
   })
 })

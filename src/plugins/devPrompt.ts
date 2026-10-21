@@ -43,6 +43,8 @@ export function downloadText(filename: string, text: string, mime = 'text/markdo
 
 /**
  * 生成「让 AI 按规范开发插件」的提示词：角色 + 目标站点 + 工作步骤 + 自检清单 + 规范全文。
+ * 交付物约定为单文件 .asplugin.json 插件包（manifest + IIFE code，sha256 缺省由宿主实算回填），
+ * 用户零构建即可在设置页导入安装。
  * siteUrl 缺省时提示词指示 AI 先向用户询问，避免凭空编造站点。
  */
 export function buildAiPluginPrompt(siteUrl?: string): string {
@@ -59,7 +61,7 @@ ${target}
 工作步骤：
 1. 探测站点：确定每个能力（weekly/latest/search/detail/play，可选 catalog/rank）的数据端点与页面结构，列出字段映射；请求须遵守频率礼貌（规范 §8.8）。
 2. 产出 manifest（JSON，规范 §4）：id 建议含站点域名词根；capabilities 只声明站点真实具备且你会实现的能力（声明即必须实现）；permissions.domains 覆盖接口与页面域名（后缀匹配）；remote 插件 sandbox 固定 "worker"。
-3. 实现代码（TypeScript ESM，默认导出工厂函数 (host: PluginContext) => AnimeSourcePlugin）：
+3. 实现代码（纯 JavaScript IIFE 脚本，零构建：不写 TypeScript 语法、不用 import/export/require，定义工厂函数 (ctx: PluginContext) => AnimeSourcePlugin 并挂到 self.__AS_PLUGIN__ —— Worker 沙箱没有 window，一律用 self）：
    - 只实现声明的能力方法，方法无状态、可并发重入；init 幂等且不做网络请求；
    - 失败必须 throw { code, message }（错误码 §9），不得用空结果伪装成功；"查无结果"返回 { items: [], hasMore: false }；
    - 分页 page 从 1 起，hasMore 准确；单次能力调用上游请求 ≤ 3 个；
@@ -69,7 +71,8 @@ ${target}
    - 多线路站点 episodeId 用 "线路序号:集序号"（均 0-based），并填充 line / lineIndex / episodeIndex 便于详情页线路分组；
    - 源站无稳定 id 时用 utils.hashId(稳定字符串) 生成且必须长期稳定（换 id 等于订阅失效）。
 4. 产出测试夹具清单（§13 最少用例集）：每个能力 1 个成功样本 + 1 个空结果 + 1 个异常样本（断言错误码），并说明夹具命名。
-5. 交付前自检表：capabilities 与方法一一对应 / 域名白名单覆盖全部请求 / 错误码正确 / 分页与预算 / https-only / 实体解码 / id 稳定性。
+5. 交付前自检表：capabilities 与方法一一对应 / 域名白名单覆盖全部请求 / 错误码正确 / 分页与预算 / https-only / 实体解码 / id 稳定性 / 单文件包结构（formatVersion 为 1、code 为 IIFE 全文、sha256 缺省）。
+6. 最终交付物（唯一交付形态）= 单个 .asplugin.json 文件：JSON 结构 { formatVersion: 1, manifest, code }——manifest 用第 2 步产出（type: "remote"、sandbox: "worker"、entry 填名义值如 "index.js"，宿主不按 entry 取文件）；code 为第 3 步 IIFE 脚本全文（作为 JSON 字符串嵌入，注意转义）；manifest.sha256 必须缺省（宿主导入时会实算回填，自行估算几乎必错、会让导入被拒）。文件名建议 <id>-v<version>.asplugin.json，用户在设置页导入该文件即完成安装。除这一个 JSON 文件外，不要输出多文件工程、package.json、构建配置或安装步骤说明。
 
 《数据源插件接口规范》全文如下：
 
