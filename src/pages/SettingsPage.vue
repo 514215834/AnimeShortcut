@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useSettingsStore } from '../stores/settings'
 import { usePluginsStore } from '../stores/plugins'
 import { getInstalledPackage } from '../plugins/host/host'
 import { downloadPackage, fetchBuiltinPackage, fetchPackageFromUrl, readPackageFromFile } from '../plugins/host/packageIO'
 import type { PluginPackage } from '../plugins/host/types'
 import { probeSource } from '../plugins/host/host'
+import { buildAiPluginPrompt, copyText, downloadText, specMarkdown } from '../plugins/devPrompt'
 import { ACCENT_PRESETS, THEME_MODES, type ThemeMode } from '../theme'
 
 const settings = useSettingsStore()
@@ -153,6 +154,37 @@ function saveInterval(): void {
 
 function toggleSource(id: string, ev: Event): void {
   settings.setSourceEnabled(id, (ev.target as HTMLInputElement).checked)
+}
+
+// ========= 开发者支持：接口规范 + AI 提示词 =========
+const devOpen = ref(false)
+const promptSite = ref('')
+const copied = ref<'' | 'spec' | 'prompt'>('')
+const copyFail = ref('')
+const aiPrompt = computed(() => buildAiPluginPrompt(promptSite.value || undefined))
+
+async function copySpec(): Promise<void> {
+  if (await copyText(specMarkdown)) {
+    copied.value = 'spec'
+    copyFail.value = ''
+    setTimeout(() => (copied.value = ''), 1800)
+  } else {
+    copyFail.value = '复制失败：请手动选中上方文本复制，或用「下载 .md」'
+  }
+}
+
+async function copyPrompt(): Promise<void> {
+  if (await copyText(aiPrompt.value)) {
+    copied.value = 'prompt'
+    copyFail.value = ''
+    setTimeout(() => (copied.value = ''), 1800)
+  } else {
+    copyFail.value = '复制失败：请手动选中上方文本复制'
+  }
+}
+
+function downloadSpec(): void {
+  downloadText('数据源插件接口规范.md', specMarkdown)
 }
 
 /** 连通性测试：走完整代理链对第一个已启用源做一次真实拉取（无单源特判） */
@@ -437,6 +469,57 @@ async function saveNotify(): Promise<void> {
         </p>
       </section>
     </div>
+
+    <!-- 开发者支持：接口规范全文 + AI 插件开发提示词 -->
+    <section
+      class="rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_16px_rgba(30,41,59,0.05)] backdrop-blur-xl"
+    >
+      <button type="button" class="flex w-full items-center justify-between gap-2 text-left" @click="devOpen = !devOpen">
+        <span>
+          <span class="text-xs font-semibold tracking-wide text-ink-4">开发者 · 插件开发</span>
+          <span class="ml-2 text-[11px] text-ink-4">按《数据源插件接口规范》零适配接入新站点：规范全文 + 让 AI 开发插件的提示词</span>
+        </span>
+        <span class="shrink-0 text-xs text-ink-4 transition-transform duration-200" :class="devOpen ? 'rotate-180' : ''">▼</span>
+      </button>
+
+      <div v-if="devOpen" class="mt-3 border-t border-line pt-3">
+        <!-- AI 提示词 -->
+        <p class="text-[13px] text-ink-2">
+          复制以下提示词交给 AI（如 ZCode / Claude / ChatGPT），它会按规范探测站点、产出清单与插件实现。可先填目标站点地址（留空则提示 AI 向你询问）：
+        </p>
+        <div class="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            v-model="promptSite"
+            type="url"
+            placeholder="https://目标站点（可选）"
+            class="min-w-0 flex-1 rounded-xl border border-line-2 bg-surface-3 px-3 py-2 text-xs outline-none transition focus:border-accent-300 focus:bg-surface-2"
+          />
+          <button
+            type="button"
+            class="rounded-xl bg-gradient-to-br from-accent-500 to-accent-400 px-3.5 py-2 text-xs text-white shadow-sm transition active:opacity-85"
+            @click="copyPrompt"
+          >{{ copied === 'prompt' ? '✓ 已复制' : '复制提示词' }}</button>
+        </div>
+        <p v-if="copyFail" class="mt-1.5 text-[11px] text-amber-600 dark:text-amber-400">{{ copyFail }}</p>
+        <pre
+          class="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-line-2 bg-surface-3 px-3 py-2.5 text-[11px] leading-relaxed text-ink-2"
+        >{{ aiPrompt }}</pre>
+
+        <!-- 接口规范全文 -->
+        <div class="mt-4 flex items-center justify-between gap-2">
+          <p class="text-[13px] text-ink-2">《数据源插件接口规范》全文（与仓库 docs/ 同源，随版本更新）</p>
+          <span class="flex shrink-0 gap-3">
+            <button type="button" class="text-[11px] text-ink-4 transition hover:text-accent-600" @click="downloadSpec">下载 .md</button>
+            <button type="button" class="text-[11px] text-ink-4 transition hover:text-accent-600" @click="copySpec">
+              {{ copied === 'spec' ? '✓ 已复制' : '复制规范' }}
+            </button>
+          </span>
+        </div>
+        <pre
+          class="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-line-2 bg-surface-3 px-3 py-2.5 text-[11px] leading-relaxed text-ink-3"
+        >{{ specMarkdown }}</pre>
+      </div>
+    </section>
 
     <!-- 权限确认弹层（规范 §11 步骤 2：显式确认后才加载） -->
     <div
