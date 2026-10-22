@@ -5,6 +5,21 @@ import { PluginError, type HttpOptions, type PluginManifest, type SandboxHandle 
 const MSG_TIMEOUT_MS = 30_000
 
 /**
+ * postMessage 结构化克隆拒绝 Proxy/函数等宿主环境对象（数据源插件曾因页面把响应式
+ * query 直接作 catalog 参数炸出 DataCloneError）：宿主 → 插件载荷一律经 JSON 往返纯化为普通对象。
+ */
+function plainify<T>(value: T): T {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T
+  } catch (e) {
+    throw new PluginError(
+      'CONFIG_INVALID',
+      `插件调用载荷不可序列化: ${e instanceof Error ? e.message : String(e)}`,
+    )
+  }
+}
+
+/**
  * Worker 内运行时垫片：与插件 code 拼成同一个 Blob Worker（自包含，无跨域 import）。
  * init 时取 self.__AS_PLUGIN__ 工厂并注入 ctx 桩；invoke 转发能力方法；
  * 桩方法经反向 RPC 回宿主执行——域名白名单、代理链、存储命名空间都在宿主侧强制。
@@ -277,7 +292,7 @@ export function createWorkerSandbox(opts: { code: string; manifest: PluginManife
           v: 1,
           id,
           op: 'init',
-          config: args[0] ?? {},
+          config: plainify(args[0] ?? {}),
           env: {
             hostVersion: HOST_VERSION,
             specVersion: '1.0' as const,
@@ -287,7 +302,7 @@ export function createWorkerSandbox(opts: { code: string; manifest: PluginManife
           },
         })
       } else {
-        worker.postMessage({ v: 1, id, op: 'invoke', method, args })
+        worker.postMessage({ v: 1, id, op: 'invoke', method, args: plainify(args) })
       }
     })
   }
