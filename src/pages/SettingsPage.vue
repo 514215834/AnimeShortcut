@@ -477,7 +477,7 @@ async function saveNotify(): Promise<void> {
       <button type="button" class="flex w-full items-center justify-between gap-2 text-left" @click="devOpen = !devOpen">
         <span>
           <span class="text-xs font-semibold tracking-wide text-ink-4">开发者 · 插件开发</span>
-          <span class="ml-2 text-[11px] text-ink-4">按《数据源插件接口规范》零适配接入新站点：规范全文 + 让 AI 开发插件的提示词</span>
+          <span class="ml-2 text-[11px] text-ink-4">按《数据源插件接口规范》零适配接入新站点：规范全文 + AI 提示词，AI 交付单个 .asplugin.json 直接导入即装</span>
         </span>
         <span class="shrink-0 text-xs text-ink-4 transition-transform duration-200" :class="devOpen ? 'rotate-180' : ''">▼</span>
       </button>
@@ -485,7 +485,7 @@ async function saveNotify(): Promise<void> {
       <div v-if="devOpen" class="mt-3 border-t border-line pt-3">
         <!-- AI 提示词 -->
         <p class="text-[13px] text-ink-2">
-          复制以下提示词交给 AI（如 ZCode / Claude / ChatGPT），它会按规范探测站点、产出清单与插件实现。可先填目标站点地址（留空则提示 AI 向你询问）：
+          复制以下提示词交给 AI（如 ZCode / Claude / ChatGPT），它会按规范探测站点、实现插件并交付单个 .asplugin.json 插件包（零构建，保存后在「数据源」区导入即装）。可先填目标站点地址（留空则提示 AI 向你询问）：
         </p>
         <div class="mt-2 flex flex-wrap items-center gap-2">
           <input

@@ -67,11 +67,11 @@ ${target}
    - 分页 page 从 1 起，hasMore 准确；单次能力调用上游请求 ≤ 3 个；
    - 所有 URL 仅 https；文本字段纯文本（utils.decodeEntities 解实体并剥 HTML 标签）；
    - weekday 按日本时间 UTC+9 档期，无把握缺省不猜；
-   - Worker 沙箱下 ctx 的所有方法（含 utils.decodeEntities / utils.absUrl）都是异步 RPC，一律 await；
+   - ctx 全部方法（含 utils.decodeEntities / utils.absUrl）一律 await：worker 沙箱下是异步 RPC，main 形态虽是同步实现但不得依赖——漏 await 的插件在 remote 分发下会以 "TypeError: s.replace is not a function" 炸穿全部能力（规范 §6 跨沙箱 await 纪律，yinhuadm/dmmiku 两例前车之鉴）；
    - 多线路站点 episodeId 用 "线路序号:集序号"（均 0-based），并填充 line / lineIndex / episodeIndex 便于详情页线路分组；
    - 源站无稳定 id 时用 utils.hashId(稳定字符串) 生成且必须长期稳定（换 id 等于订阅失效）。
-4. 产出测试夹具清单（§13 最少用例集）：每个能力 1 个成功样本 + 1 个空结果 + 1 个异常样本（断言错误码），并说明夹具命名。
-5. 交付前自检表：capabilities 与方法一一对应 / 域名白名单覆盖全部请求 / 错误码正确 / 分页与预算 / https-only / 实体解码 / id 稳定性 / 单文件包结构（formatVersion 为 1、code 为 IIFE 全文、sha256 缺省）。
+4. 产出测试夹具清单（§13 最少用例集）：每个能力 1 个成功样本 + 1 个空结果 + 1 个异常样本（断言错误码），并说明夹具命名；自检/回归必须以「ctx 全方法 Promise 化」的桩运行（§13 第 5 条，main 同步桩锁不住漏 await）。
+5. 交付前自检表：capabilities 与方法一一对应 / 域名白名单覆盖全部请求 / 错误码正确 / 分页与预算 / https-only / 实体解码 / id 稳定性 / ctx 方法全部 await / 单文件包结构（formatVersion 为 1、code 为 IIFE 全文、sha256 缺省）。
 6. 最终交付物（唯一交付形态）= 单个 .asplugin.json 文件：JSON 结构 { formatVersion: 1, manifest, code }——manifest 用第 2 步产出（type: "remote"、sandbox: "worker"、entry 填名义值如 "index.js"，宿主不按 entry 取文件）；code 为第 3 步 IIFE 脚本全文（作为 JSON 字符串嵌入，注意转义）；manifest.sha256 必须缺省（宿主导入时会实算回填，自行估算几乎必错、会让导入被拒）。文件名建议 <id>-v<version>.asplugin.json，用户在设置页导入该文件即完成安装。除这一个 JSON 文件外，不要输出多文件工程、package.json、构建配置或安装步骤说明。
 
 《数据源插件接口规范》全文如下：

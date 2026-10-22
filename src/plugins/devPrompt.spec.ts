@@ -28,5 +28,9 @@ describe('devPrompt（设置页开发者支持）', () => {
     for (const key of ['.asplugin.json', 'formatVersion: 1', '__AS_PLUGIN__', 'sha256 必须缺省']) {
       expect(p).toContain(key)
     }
+    // 跨沙箱 await 纪律（§6，yinhuadm/dmmiku 两次炸点教训）
+    for (const key of ['一律 await', '跨沙箱 await 纪律', 'Promise 化']) {
+      expect(p).toContain(key)
+    }
   })
 })
