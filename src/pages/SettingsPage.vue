@@ -24,8 +24,13 @@ const testState = ref<'idle' | 'testing' | 'ok' | 'fail'>('idle')
 const testMsg = ref('')
 const notifyDenied = ref(false)
 
-/** 官方插件包地址（随站点部署在 public/plugins/，规范 §12 发布物形态） */
-const officialPkgBase = `${location.origin}${import.meta.env.BASE_URL}plugins/yinhuadm.asplugin.json`
+/** 官方插件包（随站点部署在 public/plugins/，规范 §12 发布物形态；agedm 为内置源，其产物仅作导出用） */
+const officialPkgBase = `${location.origin}${import.meta.env.BASE_URL}plugins/`
+const officialPkgs = [
+  { id: 'yinhuadm', name: '樱花动漫' },
+  { id: 'dmmiku', name: '动漫MIKU' },
+  { id: 'girigirilove', name: 'GiriGiri动漫' },
+]
 
 // ========= 插件导入/导出/删除（docs/插件导入导出与热插拔设计.md §4.4/§6）=========
 const pluginUrlInput = ref('')
@@ -390,7 +395,10 @@ async function saveNotify(): Promise<void> {
             </div>
             <p class="mt-2 text-[11px] leading-relaxed text-ink-4">
               插件包为单文件 JSON（.asplugin.json）。加载第三方代码前会展示权限摘要并要求确认；请仅从可信来源安装。
-              官方插件包随本站点发布：导入地址填 <code class="rounded bg-gray-100/90 px-1 dark:bg-white/10">{{ officialPkgBase }}</code>（樱花动漫）。
+              官方插件包随本站点发布，导入地址：
+            </p>
+            <p v-for="p in officialPkgs" :key="p.id" class="mt-1 truncate text-[11px] leading-relaxed text-ink-4">
+              {{ p.name }}：<code class="rounded bg-gray-100/90 px-1 dark:bg-white/10">{{ officialPkgBase }}{{ p.id }}.asplugin.json</code>
             </p>
           </template>
         </div>
