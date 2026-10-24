@@ -52,7 +52,13 @@ const updateStore = useUpdateStore()
     </header>
 
     <main class="w-full flex-1 px-4 pb-24 pt-5 sm:px-6 sm:pb-8">
-      <RouterView />
+      <!-- KeepAlive：分类/榜单/搜索列表状态在切页间保留（源变化由各页 watch 处理）；
+           详情/播放页依赖路由参数必须重挂载，故不缓存 -->
+      <RouterView v-slot="{ Component }">
+        <KeepAlive include="CatalogPage,RankPage,SearchPage">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
     </main>
 
     <!-- 移动端：毛玻璃底部导航 -->

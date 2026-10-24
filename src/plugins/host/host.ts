@@ -314,7 +314,8 @@ export async function getInstalledPackage(id: string): Promise<PluginPackage | n
 }
 
 function hintFor(l: Loaded, cap: PluginCapability): number {
-  return l.manifest.cacheHints?.[cap] ?? DEFAULT_HINTS[cap]
+  // cacheHints 按规范以秒声明（§8.5），缓存层以毫秒计——此前直接透传导致能力缓存仅存活亚秒级
+  return (l.manifest.cacheHints?.[cap] ?? DEFAULT_HINTS[cap]) * 1000
 }
 
 /** 能力调用：缓存（按 manifest.cacheHints）+ 能力协商 + 错误透传 */

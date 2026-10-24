@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type { CatalogFilterDef, RankGroup } from '../plugins/host/types'
 import { listSources, sources } from '../plugins/host/host'
 import { useSettingsStore } from '../stores/settings'
@@ -49,6 +49,14 @@ onMounted(async () => {
   }
   await load()
 })
+
+// KeepAlive 缓存页面：榜单源变化时（设置页启停/装卸插件）按新源重拉
+watch(
+  () => rankSource.value?.id,
+  (id) => {
+    if (id) void load()
+  },
+)
 
 const current = computed(() => groups.value[activeGroup.value] ?? null)
 

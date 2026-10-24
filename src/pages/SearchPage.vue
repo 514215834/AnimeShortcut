@@ -16,24 +16,46 @@ const searched = ref(false)
 const results = ref<MergedCard[]>([])
 const error = ref('')
 
+/** 会话级搜索记忆（LRU，上限 30 条）：返回/微调关键词时免重复网络请求 */
+const memo = new Map<string, MergedCard[]>()
+const MEMO_MAX = 30
+
 async function doSearch(): Promise<void> {
   const q = keyword.value.trim()
   if (!q || searching.value) return
+  const cached = memo.get(q)
+  if (cached) {
+    memo.delete(q)
+    memo.set(q, cached)
+    results.value = cached
+    error.value = ''
+    searched.value = true
+    return
+  }
   searching.value = true
   error.value = ''
   try {
+    const srcs = listSources().filter((s) => settings.isSourceEnabled(s.id))
+    const settled = await Promise.allSettled(srcs.map((s) => sources.search(s.id, q, 1)))
     let collected: AnimeSummary[] = []
     const failures: string[] = []
-    for (const src of listSources()) {
-      if (!settings.isSourceEnabled(src.id)) continue
-      try {
-        const r = await sources.search(src.id, q, 1)
-        collected = collected.concat(r.items)
-      } catch (e) {
-        failures.push(`${src.name}: ${e instanceof Error ? e.message : String(e)}`)
+    settled.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
+        collected.push(...r.value.items)
+      } else {
+        const reason = r.reason
+        failures.push(`${srcs[i].name}: ${reason instanceof Error ? reason.message : String(reason)}`)
+      }
+    })
+    const merged = mergeByTitle(collected)
+    results.value = merged
+    if (merged.length > 0) {
+      memo.set(q, merged)
+      if (memo.size > MEMO_MAX) {
+        const oldest = memo.keys().next()
+        if (oldest.done !== true) memo.delete(oldest.value)
       }
     }
-    results.value = mergeByTitle(collected)
     error.value = collected.length === 0 ? failures.join('；') : ''
   } finally {
     searching.value = false

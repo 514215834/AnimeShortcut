@@ -96,20 +96,46 @@ describe('PluginHost 能力协商与注入', () => {
   })
 
   it('cacheHints 生效：命中缓存不重复调用', async () => {
-    const calls = { count: 0 }
     const mf = stubManifest({ cacheHints: { latest: 600 } })
+    let capCalls = 0
     await initPluginHost({
       factories: [
         stubFactory(mf, {
-          getLatestUpdates: async () => ({ items: [], page: 1, hasMore: false }),
-        }, calls),
+          getLatestUpdates: async () => {
+            capCalls += 1
+            return { items: [], page: 1, hasMore: false }
+          },
+        }, { count: 0 }),
       ],
     })
-    const before = calls.count
     await sources.latest('stub', 1)
     await sources.latest('stub', 1)
-    expect(calls.count).toBe(before) // init 不经 invoke；两次调用命中缓存
+    expect(capCalls).toBe(1) // 第二次调用命中能力级缓存，不再进插件
     expect(listSources()[0]?.id).toBe('stub')
+  })
+
+  it('cacheHints 单位为秒（回归）：600s 内推进时钟仍命中缓存', async () => {
+    vi.useFakeTimers()
+    try {
+      const mf = stubManifest({ cacheHints: { latest: 600 } })
+      let capCalls = 0
+      await initPluginHost({
+        factories: [
+          stubFactory(mf, {
+            getLatestUpdates: async () => {
+              capCalls += 1
+              return { items: [], page: 1, hasMore: false }
+            },
+          }, { count: 0 }),
+        ],
+      })
+      await sources.latest('stub', 1)
+      vi.setSystemTime(Date.now() + 5 * 60 * 1000) // 推进 5 分钟：若单位误作毫秒此时早已过期
+      await sources.latest('stub', 1)
+      expect(capCalls).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('未知数据源 → UNSUPPORTED', async () => {

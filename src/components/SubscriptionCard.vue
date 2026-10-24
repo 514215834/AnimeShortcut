@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import type { Subscription } from '../core/storage/schema'
 import { useUpdateStore } from '../stores/update'
+import { vReveal } from '../directives/reveal'
 
 const props = defineProps<{ sub: Subscription }>()
 defineEmits<{ remove: [] }>()
@@ -21,7 +22,7 @@ function open(): void {
 </script>
 
 <template>
-  <div class="group relative">
+  <div v-reveal class="group relative">
     <button
       type="button"
       class="block w-full rounded-2xl border border-line bg-surface p-2 text-left shadow-[0_2px_10px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface-2 hover:shadow-[0_8px_24px_rgba(30,41,59,0.12)]"

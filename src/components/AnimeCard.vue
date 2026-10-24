@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { AnimeSummary } from '../plugins/host/types'
+import { vReveal } from '../directives/reveal'
 
 defineProps<{ item: AnimeSummary; /** 归并后的来源列表（多源同名时 >1，展示徽标） */ sourceIds?: string[] }>()
 
@@ -13,6 +14,7 @@ function go(it: AnimeSummary): void {
 
 <template>
   <button
+    v-reveal
     type="button"
     class="group block w-full rounded-2xl border border-line bg-surface p-2 text-left shadow-[0_2px_10px_rgba(30,41,59,0.04)] backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-surface-2 hover:shadow-[0_8px_24px_rgba(30,41,59,0.12)]"
     @click="go(item)"
@@ -24,6 +26,7 @@ function go(it: AnimeSummary): void {
         :alt="item.title"
         referrerpolicy="no-referrer"
         loading="lazy"
+        decoding="async"
         class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
         @error="imgFailed = true"
       />

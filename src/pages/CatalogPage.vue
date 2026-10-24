@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { AnimeSummary, CatalogFilterDef, CatalogQuery } from '../plugins/host/types'
 import { listSources, sources } from '../plugins/host/host'
 import { useSettingsStore } from '../stores/settings'
@@ -24,37 +24,80 @@ const catalogSources = computed(() =>
   listSources().filter((s) => settings.isSourceEnabled(s.id) && s.capabilities.includes('catalog')),
 )
 
+/** 已无更多分页的源：后续页不再对其发起注定为空的请求 */
+const exhausted = new Set<string>()
+/** 竞态防护：加载期间变更筛选时，旧加载结果作废、结束后按最新筛选重跑 */
+let pendingReset = false
+/** 在途加载的筛选快照：init 里 watch(query) 与显式 loadPage 双触发时按同参去重，避免作废重发 */
+let loadingQuery: CatalogQuery | null = null
+
+function sameQuery(a: CatalogQuery, b: CatalogQuery | null): boolean {
+  return b !== null && JSON.stringify(a) === JSON.stringify(b)
+}
+
 async function loadPage(reset: boolean): Promise<void> {
-  if (loading.value || (!hasMore.value && !reset)) return
+  const querySnapshot: CatalogQuery = { ...query.value }
+  if (loading.value) {
+    if (reset && !sameQuery(querySnapshot, loadingQuery)) pendingReset = true
+    return
+  }
+  if (!hasMore.value && !reset) return
   loading.value = true
-  if (reset) error.value = ''
+  loadingQuery = querySnapshot
+  if (reset) {
+    error.value = ''
+    exhausted.clear()
+  }
+  const p = reset ? 1 : page.value + 1
+  const active = catalogSources.value.filter((s) => !exhausted.has(s.id))
   try {
-    const p = reset ? 1 : page.value + 1
-    let collected: AnimeSummary[] = []
+    const settled = await Promise.allSettled(
+      active.map((src) => sources.catalog(src.id, querySnapshot, p)),
+    )
+    // 在途期间有筛选变更：本次结果作废，finally 里按新筛选重来
+    if (pendingReset) return
+    const collected: AnimeSummary[] = []
     let anyMore = false
     const failures: string[] = []
-    for (const src of catalogSources.value) {
-      try {
-        const r = await sources.catalog(src.id, query.value, p)
-        collected = collected.concat(r.items)
-        if (r.hasMore) anyMore = true
-      } catch (e) {
-        failures.push(`${src.name}: ${e instanceof Error ? e.message : String(e)}`)
+    settled.forEach((r, i) => {
+      const src = active[i]
+      if (r.status === 'fulfilled') {
+        collected.push(...r.value.items)
+        if (r.value.hasMore) anyMore = true
+        else exhausted.add(src.id)
+      } else {
+        const reason = r.reason
+        failures.push(`${src.name}: ${reason instanceof Error ? reason.message : String(reason)}`)
       }
-    }
-    const seen = new Set<string>()
-    const merged = (reset ? [] : items.value).concat(collected).filter((it) => {
-      const k = `${it.sourceId}:${it.animeId}`
-      if (seen.has(k)) return false
-      seen.add(k)
-      return true
     })
-    items.value = merged.sort((a, b) => (b.updateTime ?? 0) - (a.updateTime ?? 0))
+    // 去重（跨页/跨源复合键），新批次内部按更新时间排序后追加——
+    // 不重排已渲染前缀，避免滚动中已有卡片跳位
+    const seen = new Set(items.value.map((it) => `${it.sourceId}:${it.animeId}`))
+    const batch: AnimeSummary[] = []
+    for (const it of collected) {
+      const k = `${it.sourceId}:${it.animeId}`
+      if (seen.has(k)) continue
+      seen.add(k)
+      batch.push(it)
+    }
+    batch.sort((a, b) => (b.updateTime ?? 0) - (a.updateTime ?? 0))
+    items.value = reset ? batch : [...items.value, ...batch]
     page.value = p
-    hasMore.value = anyMore
+    // 全部源失败视为瞬时故障：保留 hasMore 供手动重试，不误标「到底了」
+    const allFailed = active.length > 0 && failures.length === active.length
+    hasMore.value = allFailed ? hasMore.value : anyMore
     if (failures.length > 0 && collected.length === 0) error.value = failures.join('；')
   } finally {
     loading.value = false
+    loadingQuery = null
+    if (pendingReset) {
+      pendingReset = false
+      void loadPage(true)
+    } else if (hasMore.value && items.value.length > 0) {
+      // 宽屏短页：新内容渲染后 sentinel 可能仍在视口内，强制续载下一页
+      await nextTick()
+      recheck()
+    }
   }
 }
 
@@ -68,9 +111,9 @@ watch(query, () => {
 })
 
 const sentinel = ref<HTMLElement | null>(null)
-useInfiniteScroll(sentinel, () => void loadPage(false))
+const { recheck } = useInfiniteScroll(sentinel, () => void loadPage(false))
 
-onMounted(async () => {
+async function init(): Promise<void> {
   const src = catalogSources.value[0]
   if (!src) {
     error.value = '当前启用的数据源不支持分类浏览'
@@ -86,6 +129,15 @@ onMounted(async () => {
   } finally {
     initialized.value = true
   }
+}
+
+onMounted(() => void init())
+
+// KeepAlive 缓存页面：启用的分类源集合变化时（设置页启停/装卸插件）按新源集合重初始化
+const sourceKey = computed(() => catalogSources.value.map((s) => s.id).join(','))
+watch(sourceKey, () => {
+  if (!initialized.value) return
+  void init()
 })
 </script>
 

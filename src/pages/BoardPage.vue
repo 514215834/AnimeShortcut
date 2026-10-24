@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
 import { useBoardStore } from '../stores/board'
 import { useUpdateStore } from '../stores/update'
 import { useInfiniteScroll } from '../composables/useInfiniteScroll'
@@ -12,7 +12,16 @@ const board = useBoardStore()
 const updateStore = useUpdateStore()
 
 const sentinel = useTemplateRef<HTMLElement | null>('sentinel')
-useInfiniteScroll(sentinel, () => void board.loadMoreLatest())
+const { recheck } = useInfiniteScroll(sentinel, () => void board.loadMoreLatest())
+
+// 宽屏短页续载：新页渲染后 sentinel 仍在视口内时，IO 不会因「持续相交」再次触发，强制重报
+watch(
+  () => board.latestPage,
+  async () => {
+    await nextTick()
+    recheck()
+  },
+)
 
 const dayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
