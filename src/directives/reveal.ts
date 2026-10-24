@@ -5,6 +5,11 @@ import type { Directive } from 'vue'
  * 依序错峰（类似 ani.girigirilove 列表的动态加载效果）；视口外元素保持隐藏，
  * 配合图片 loading="lazy" 形成视口区域优先加载策略。
  * 尊重系统「减弱动态效果」设置；不支持 IntersectionObserver 的环境直接可见。
+ *
+ * 时序注意：必须在 mounted 钩子加 reveal-pending——指令 created 钩子先于模板 class 应用
+ * （mountElement 先 invoke created 后 hostPatchProp），在 created 加的类会被 patchClass
+ * 整体覆写抹掉，导致观察器建立不起来。mounted 经 queuePostRenderEffect 在微任务执行、
+ * 先于浏览器绘制，元素首帧画出前已隐藏，无闪烁。
  */
 
 const REVEAL_PENDING = 'reveal-pending'
@@ -34,12 +39,9 @@ function nextDelayMs(): number {
 }
 
 export const vReveal: Directive<HTMLElement> = {
-  created(el) {
+  mounted(el) {
     if (reducedMotion() || typeof IntersectionObserver === 'undefined') return
     el.classList.add(REVEAL_PENDING)
-  },
-  mounted(el) {
-    if (!el.classList.contains(REVEAL_PENDING)) return
     const io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting)) return
       io.disconnect()
